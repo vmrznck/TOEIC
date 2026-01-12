@@ -1,0 +1,6965 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEIC 單字卡 - 測驗版</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f0f2f5;
+        }
+
+        body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background-color: var(--bg); margin: 0; padding-top: 80px; }
+        
+        /* 1. 固定在最上方的控制列 */
+        .sticky-header {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: #ffffff; padding: 12px 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex; align-items: center; justify-content: space-between; 
+            flex-wrap: wrap;
+        }
+
+        .header-left, .header-right {
+            display: flex; align-items: center; gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* 2. 目錄分頁按鈕區域 */
+        .tab-container {
+            max-width: 1100px;
+            margin: 20px auto 0 auto;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 0 20px;
+        }
+
+        .control-group { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        
+        button {
+            padding: 8px 16px; cursor: pointer; border: 1.5px solid var(--primary);
+            background: white; color: var(--primary); border-radius: 6px; font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover { background: #ebf5fb; }
+        button.active { background: var(--primary) !important; color: white !important; }
+        button.danger { border-color: var(--danger); color: var(--danger); }
+        button.danger:hover { background: var(--danger); color: white; }
+        button.success { border-color: var(--secondary); color: var(--secondary); }
+        button.success:hover { background: var(--secondary); color: white; }
+
+        .tab-button { min-width: 80px; border-color: #95a5a6; color: #95a5a6; }
+
+        .container { max-width: 900px; margin: auto; padding: 20px; }
+        
+        h2 { border-left: 6px solid var(--primary); padding-left: 12px; color: #2c3e50; font-size: 1.25em; margin-top: 35px; }
+
+        .card {
+            background: white; padding: 18px; border-radius: 10px; margin-bottom: 12px;
+            display: flex; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.1s;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .mastered-card { background-color: #f8f9fa; opacity: 0.75; border: 1px dashed #ccc; }
+
+        .check-area { width: 50px; text-align: center; }
+        .word-area { width: 180px; padding-right: 20px; border-right: 2px solid #f0f0f0; }
+        .sentence-area { flex-grow: 1; padding-left: 25px; }
+
+        .word-text { font-size: 1.3em; font-weight: bold; cursor: pointer; color: #2c3e50; line-height: 1.2; }
+        .word-text:hover { color: var(--primary); }
+        .translation { color: #5a6772; font-size: 1em; margin-top: 6px; }
+        
+        .sentence-en { font-style: normal; font-family: "Segoe UI", Arial, sans-serif; color: #34495e; cursor: pointer; margin-bottom: 6px; font-size: 1.15em; line-height: 1.4; }
+        .sentence-en:hover { color: var(--primary); }
+        .sentence-zh { color: #7f8c8d; font-size: 0.95em; }
+
+        .hide-content { visibility: hidden; }
+
+        .overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto; padding-top: 50px;
+        }
+        .quiz-card {
+            background: white; max-width: 500px; margin: 20px auto; padding: 30px;
+            border-radius: 15px; text-align: center; position: relative;
+        }
+        .quiz-word { font-size: 2.5em; font-weight: bold; margin: 20px 0; color: var(--primary); }
+        .quiz-trans { font-size: 1.5em; color: #666; margin-bottom: 20px; min-height: 1.5em; }
+        .quiz-sentence { text-align: left; background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; font-style: italic; }
+        .quiz-options { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
+        .quiz-btn { font-size: 1.1em; padding: 12px 30px; }
+        
+        .stats-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #999; }
+
+        input[type="checkbox"] { transform: scale(1.4); cursor: pointer; }
+
+        @media (max-width: 768px) {
+            .card { flex-direction: column; align-items: flex-start; }
+            .word-area { width: 100%; border-right: none; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
+            .sentence-area { padding-left: 0; }
+            .sticky-header { flex-direction: column; gap: 10px; padding-top: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sticky-header">
+    <div class="header-left">
+        <div class="control-group">
+            <label>語速: </label>
+            <input type="range" id="rateRange" min="0.3" max="1.5" step="0.1" value="0.8" oninput="updateRate(this.value)">
+            <span id="rateValue">0.8</span>
+        </div>
+        <button id="btnHideWord" onclick="toggleVisibility('word')">顯示/隱藏單字</button>
+        <button id="btnHideTrans" onclick="toggleVisibility('trans')">顯示/隱藏中文</button>
+        <button class="danger" onclick="resetProgress()">重置分頁進度</button>
+    </div>
+    <div class="header-right">
+        <button class="success" onclick="startQuiz('trans')">單字測驗</button>
+        <button class="success" onclick="startQuiz('audio')">聽力測驗</button>
+        <button class="success" onclick="startQuiz('word')">翻譯測驗</button>
+        <button onclick="showStats()">查看統計</button>
+    </div>
+</div>
+
+<div class="tab-container" id="tabMenu"></div>
+
+<div class="container">
+    <h2 id="currentTitle">學習清單 - List 1 (<span id="learnCount">0</span>)</h2>
+    <div id="learningList"></div>
+
+    <h2>已熟練單字(點擊可恢復) (<span id="masteredCount">0</span>)</h2>
+    <div id="masteredList"></div>
+</div>
+
+<div id="quizOverlay" class="overlay">
+    <div class="quiz-card">
+        <span class="close-btn" onclick="endQuiz()">&times;</span>
+        <div id="quizProgress" style="color: #999; font-size: 0.9em;"></div>
+        <div id="quizDisplay"></div>
+        <div class="quiz-options" id="quizActions" style="display:none;">
+            <button class="success quiz-btn" onclick="submitQuiz(true)">我會了</button>
+            <button class="danger quiz-btn" onclick="submitQuiz(false)">還不會</button>
+        </div>
+        <div id="quizAnswerBtn" style="margin-top:20px;">
+            <button onclick="showQuizAnswer()">查看答案</button>
+        </div>
+    </div>
+</div>
+
+<div id="statsOverlay" class="overlay">
+    <div class="quiz-card" style="max-width: 600px;">
+        <span class="close-btn" onclick="document.getElementById('statsOverlay').style.display='none'">&times;</span>
+        <h3>測驗統計 (List <span id="statsListNum">1</span>)</h3>
+        <p style="font-size: 0.85em; color: #e74c3c;">* 單字依錯誤次數由多到少排序</p>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>單字</th>
+                        <th>正確</th>
+                        <th>錯誤</th>
+                        <th>答對率</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody"></tbody>
+            </table>
+        </div>
+        <button class="danger" style="margin-top:20px;" onclick="resetStats()">清除統計數據</button>
+    </div>
+</div>
+
+<script>
+    // 單字資料區 (請在此處貼入您原本 1~10 的完整單字資料)
+    const allVocabData = {
+        1: [
+ {
+    "id": 1,
+    "word": "abandon",
+    "trans": "捨棄",
+    "sentence": "Heavy workload force him to abandon the trip",
+    "sentenceTrans": "沉重的工作量迫使放棄旅行計劃"
+  },
+  {
+    "id": 2,
+    "word": "abrupt",
+    "trans": "突然的",
+    "sentence": "Abrupt change of policy",
+    "sentenceTrans": "政策急轉彎"
+  },
+  {
+    "id": 3,
+    "word": "absence",
+    "trans": "缺席",
+    "sentence": "Took a two-week leave of absence",
+    "sentenceTrans": "請兩週的假"
+  },
+  {
+    "id": 4,
+    "word": "absolute",
+    "trans": "絕對的",
+    "sentence": "Have absolute faith",
+    "sentenceTrans": "有絕對的信心"
+  },
+  {
+    "id": 5,
+    "word": "absorb",
+    "trans": "吸收",
+    "sentence": "Absorb the smaller rivals",
+    "sentenceTrans": "吸收規模較小的競爭對手"
+  },
+  {
+    "id": 6,
+    "word": "abstract",
+    "trans": "抽象的",
+    "sentence": "Action is more important than abstract discussion",
+    "sentenceTrans": "行動比空談重要"
+  },
+  {
+    "id": 7,
+    "word": "absurdly",
+    "trans": "誇張地",
+    "sentence": "Absurdly priced product",
+    "sentenceTrans": "貴的要命的產品"
+  },
+  {
+    "id": 8,
+    "word": "abundant",
+    "trans": "充沛的",
+    "sentence": "Abundant food",
+    "sentenceTrans": "充沛的食物"
+  },
+  {
+    "id": 9,
+    "word": "abuse",
+    "trans": "濫用",
+    "sentence": "Abuse the power",
+    "sentenceTrans": "濫用職權"
+  },
+  {
+    "id": 10,
+    "word": "accelerate",
+    "trans": "加速",
+    "sentence": "Accelerate the growth of sales",
+    "sentenceTrans": "加速業績的成長"
+  },
+  {
+    "id": 11,
+    "word": "accent",
+    "trans": "口音",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 12,
+    "word": "access",
+    "trans": "入口",
+    "sentence": "Easier access to the library",
+    "sentenceTrans": "方便進入圖書館"
+  },
+  {
+    "id": 13,
+    "word": "accessories",
+    "trans": "配件",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 14,
+    "word": "accommodation",
+    "trans": "住宿",
+    "sentence": "Travel agency to arrange our accommodations",
+    "sentenceTrans": "旅行社安排我們的住宿"
+  },
+  {
+    "id": 15,
+    "word": "accomplish",
+    "trans": "完成",
+    "sentence": "Accomplish a great deal",
+    "sentenceTrans": "成果非凡"
+  },
+  {
+    "id": 16,
+    "word": "accumulate",
+    "trans": "累積",
+    "sentence": "Accumulate experiences",
+    "sentenceTrans": "累積經驗"
+  },
+  {
+    "id": 17,
+    "word": "accurate",
+    "trans": "正確的",
+    "sentence": "This report isn't accurate enough",
+    "sentenceTrans": "這份報告不夠正確"
+  },
+  {
+    "id": 18,
+    "word": "accuse",
+    "trans": "控告",
+    "sentence": "He was accused of theft",
+    "sentenceTrans": "他被控偷竊"
+  },
+  {
+    "id": 19,
+    "word": "accustom",
+    "trans": "習慣於",
+    "sentence": "Still trying to get accustomd to the new work environment",
+    "sentenceTrans": "還在努力適應新的工作環境"
+  },
+  {
+    "id": 20,
+    "word": "achieve",
+    "trans": "達成",
+    "sentence": "Work harder to achieve the goals",
+    "sentenceTrans": "更努力去達成目標"
+  },
+  {
+    "id": 21,
+    "word": "acidity",
+    "trans": "酸性",
+    "sentence": "Reduce the soil acidity",
+    "sentenceTrans": "降低土壤的酸性"
+  },
+  {
+    "id": 22,
+    "word": "additional",
+    "trans": "額外的",
+    "sentence": "Additional charge",
+    "sentenceTrans": "額外的費用"
+  },
+  {
+    "id": 23,
+    "word": "address",
+    "trans": "發表演說",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 24,
+    "word": "adjacent",
+    "trans": "鄰近的",
+    "sentence": "The staff cafeteria is adjacent to the lecture hall",
+    "sentenceTrans": "員工餐廳在演講廳的旁邊"
+  },
+  {
+    "id": 25,
+    "word": "administration",
+    "trans": "行政",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 26,
+    "word": "admire",
+    "trans": "欣賞",
+    "sentence": "Take time to stop and admire the view",
+    "sentenceTrans": "找時間停下來欣賞風景"
+  },
+  {
+    "id": 27,
+    "word": "adopt",
+    "trans": "採納",
+    "sentence": "Adopt my suggestions",
+    "sentenceTrans": "採納我的建議"
+  },
+  {
+    "id": 28,
+    "word": "advance",
+    "trans": "預付款",
+    "sentence": "Pay me an advance of 300 dollars",
+    "sentenceTrans": "預付我300塊"
+  },
+  {
+    "id": 29,
+    "word": "afford",
+    "trans": "經得起",
+    "sentence": "Can't afford to lose",
+    "sentenceTrans": "經不起失去"
+  },
+  {
+    "id": 30,
+    "word": "agency",
+    "trans": "機構",
+    "sentence": "Employment agency",
+    "sentenceTrans": "職業介紹所"
+  },
+  {
+    "id": 31,
+    "word": "agenda",
+    "trans": "討論事項",
+    "sentence": "The question of cutting salaries is on the agenda",
+    "sentenceTrans": "減薪的問題被排在討論事項裡"
+  },
+  {
+    "id": 32,
+    "word": "aggressive",
+    "trans": "積極的",
+    "sentence": "Organize an aggressive marketing campaign",
+    "sentenceTrans": "策劃積極性的行銷活動"
+  },
+  {
+    "id": 33,
+    "word": "agreement",
+    "trans": "合約",
+    "sentence": "Read the terms of the agreement beforehand",
+    "sentenceTrans": "先看過合約條款"
+  },
+  {
+    "id": 34,
+    "word": "alimony",
+    "trans": "贍養費",
+    "sentence": "Arguing over the alimony settlement",
+    "sentenceTrans": "對贍養費的安排仍有爭議"
+  },
+  {
+    "id": 35,
+    "word": "allergic",
+    "trans": "過敏的",
+    "sentence": "Allergic to seafood",
+    "sentenceTrans": "對海鮮過敏"
+  },
+  {
+    "id": 36,
+    "word": "allotted",
+    "trans": "指派的",
+    "sentence": "Fail to finish the job in the allotted time",
+    "sentenceTrans": "無法在規定時間內完成工作"
+  },
+  {
+    "id": 37,
+    "word": "allowance",
+    "trans": "允許額度",
+    "sentence": "Tax allowance",
+    "sentenceTrans": "免稅額"
+  },
+  {
+    "id": 38,
+    "word": "ally",
+    "trans": "親信",
+    "sentence": "One of the president's closest allies",
+    "sentenceTrans": "總經理的親信之一"
+  },
+  {
+    "id": 39,
+    "word": "alternative",
+    "trans": "替代方案",
+    "sentence": "Have no alternative but to",
+    "sentenceTrans": "別無選擇"
+  },
+  {
+    "id": 40,
+    "word": "altitude",
+    "trans": "高度",
+    "sentence": "flying at an altitude of 35,000 feet",
+    "sentenceTrans": "飛行高度"
+  },
+  {
+    "id": 41,
+    "word": "alumnus",
+    "trans": "校友",
+    "sentence": "The alumni association",
+    "sentenceTrans": "校友會"
+  },
+  {
+    "id": 42,
+    "word": "amateur",
+    "trans": "業餘的",
+    "sentence": "Amateur photographer",
+    "sentenceTrans": "業餘攝影師"
+  },
+  {
+    "id": 43,
+    "word": "ambience",
+    "trans": "環境",
+    "sentence": "The ambience in that hotel",
+    "sentenceTrans": "那座飯店的環境"
+  },
+  {
+    "id": 44,
+    "word": "ambiguous",
+    "trans": "不明確的",
+    "sentence": "This ambiguous agreement",
+    "sentenceTrans": "這份不明確的合約"
+  },
+  {
+    "id": 45,
+    "word": "amendment",
+    "trans": "修改",
+    "sentence": "This project need some amendment",
+    "sentenceTrans": "這份企劃書需要修改一下"
+  },
+  {
+    "id": 46,
+    "word": "amusement",
+    "trans": "娛樂",
+    "sentence": "The amusement park",
+    "sentenceTrans": "遊樂園"
+  },
+  {
+    "id": 47,
+    "word": "anticipate",
+    "trans": "預期",
+    "sentence": "We hadn't anticipated any problems with",
+    "sentenceTrans": "沒想到會出問題"
+  },
+  {
+    "id": 48,
+    "word": "anxiety",
+    "trans": "焦慮",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 49,
+    "word": "apology",
+    "trans": "道歉",
+    "sentence": "Receive a letter of apology",
+    "sentenceTrans": "收到一封道歉信函"
+  },
+  {
+    "id": 50,
+    "word": "apparel",
+    "trans": "衣著配備",
+    "sentence": "Women's apparel",
+    "sentenceTrans": "女裝"
+  },
+  {
+    "id": 51,
+    "word": "appeal",
+    "trans": "訴請",
+    "sentence": "He appealed to the union to give up on the strike",
+    "sentenceTrans": "請求工會停止罷工"
+  },
+  {
+    "id": 52,
+    "word": "appetite",
+    "trans": "慾望",
+    "sentence": "He has no appetite for fame",
+    "sentenceTrans": "他對出名沒興趣"
+  },
+  {
+    "id": 53,
+    "word": "applaud",
+    "trans": "鼓掌",
+    "sentence": "The audience cheered and applauded",
+    "sentenceTrans": "觀眾歡呼鼓掌"
+  },
+  {
+    "id": 54,
+    "word": "apply",
+    "trans": "申請",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 55,
+    "word": "appraise",
+    "trans": "評鑑",
+    "sentence": "Appraise job performance",
+    "sentenceTrans": "評價工作表現"
+  },
+  {
+    "id": 56,
+    "word": "appreciate",
+    "trans": "感激",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 57,
+    "word": "apprentice",
+    "trans": "新手",
+    "sentence": "Heads started off as apprentices",
+    "sentenceTrans": "主管是從新手開始做起"
+  },
+  {
+    "id": 58,
+    "word": "approach",
+    "trans": "接近",
+    "sentence": "Approach the podium",
+    "sentenceTrans": "走近講台"
+  },
+  {
+    "id": 59,
+    "word": "approve",
+    "trans": "准許",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 60,
+    "word": "aptitude",
+    "trans": "性向",
+    "sentence": "Aptitude test",
+    "sentenceTrans": "性向測試"
+  },
+  {
+    "id": 61,
+    "word": "articulate",
+    "trans": "口才好的",
+    "sentence": "Salesman is very articulate",
+    "sentenceTrans": "銷售員口才很好"
+  },
+  {
+    "id": 62,
+    "word": "artificial",
+    "trans": "人工的",
+    "sentence": "Product contain no artificial coloring",
+    "sentenceTrans": "不含人工色素"
+  },
+  {
+    "id": 63,
+    "word": "assembly",
+    "trans": "組裝",
+    "sentence": "Cars are being put together on that assembly line",
+    "sentenceTrans": "在那條生產線組裝"
+  },
+  {
+    "id": 64,
+    "word": "assess",
+    "trans": "評鑑",
+    "sentence": "It's too early to assess the effects of the new policy",
+    "sentenceTrans": "要評估新政策的影響還太早"
+  },
+  {
+    "id": 65,
+    "word": "asset",
+    "trans": "資產",
+    "sentence": "A sense of responsibility is your greatest asset",
+    "sentenceTrans": "責任感是你最大的資產"
+  },
+  {
+    "id": 66,
+    "word": "assist",
+    "trans": "協助",
+    "sentence": "Assist me with the negotiations",
+    "sentenceTrans": "協助我談判"
+  },
+  {
+    "id": 67,
+    "word": "assume",
+    "trans": "假設",
+    "sentence": "Assuming you are right,",
+    "sentenceTrans": "假設你說的沒錯"
+  },
+  {
+    "id": 68,
+    "word": "athletic",
+    "trans": "有運動細胞的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 69,
+    "word": "atmosphere",
+    "trans": "氣氛",
+    "sentence": "The office's atmosphere",
+    "sentenceTrans": "辦公室的氣氛"
+  },
+  {
+    "id": 70,
+    "word": "attach",
+    "trans": "附著",
+    "sentence": "Attach a note to the folder",
+    "sentenceTrans": "在檔案夾上貼了一張紙條"
+  },
+  {
+    "id": 71,
+    "word": "attraction",
+    "trans": "吸引人的東西",
+    "sentence": "The biggest tourist attraction",
+    "sentenceTrans": "最吸引人的觀光景點"
+  },
+  {
+    "id": 72,
+    "word": "attribute",
+    "trans": "歸功於",
+    "sentence": "Attribute his success to his family",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 73,
+    "word": "badge",
+    "trans": "徽章",
+    "sentence": "Present visitor's badge",
+    "sentenceTrans": "出示訪客證"
+  },
+  {
+    "id": 74,
+    "word": "ballot",
+    "trans": "選票",
+    "sentence": "Count the ballots",
+    "sentenceTrans": "記票"
+  },
+  {
+    "id": 75,
+    "word": "bank",
+    "trans": "河堤",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 76,
+    "word": "bankruptcy",
+    "trans": "破產",
+    "sentence": "Company file for bankruptcy",
+    "sentenceTrans": "公司宣告破產"
+  },
+  {
+    "id": 77,
+    "word": "bar",
+    "trans": "禁止",
+    "sentence": "The building was barred to the public",
+    "sentenceTrans": "大樓禁止民眾進入"
+  },
+  {
+    "id": 78,
+    "word": "bare",
+    "trans": "赤裸的",
+    "sentence": "Most trees are bare",
+    "sentenceTrans": "大部分的葉子都掉光了"
+  },
+  {
+    "id": 79,
+    "word": "bargain",
+    "trans": "講價",
+    "sentence": "You 'd better bargain with them for a discount",
+    "sentenceTrans": "你最好跟他們議價以取得折扣"
+  },
+  {
+    "id": 80,
+    "word": "belongings",
+    "trans": "個人物品",
+    "sentence": "Don't forget to collect your belongings",
+    "sentenceTrans": "別忘了收拾好個人物品"
+  },
+  {
+    "id": 81,
+    "word": "benefit",
+    "trans": "補助",
+    "sentence": "Unemployment benefits",
+    "sentenceTrans": "失業補助"
+  },
+  {
+    "id": 82,
+    "word": "bid",
+    "trans": "下標的價錢",
+    "sentence": "Place a bid of 20 dollars for the used book",
+    "sentenceTrans": "下標20元買那本二手書"
+  },
+  {
+    "id": 83,
+    "word": "bill",
+    "trans": "法案",
+    "sentence": "Transport bill",
+    "sentenceTrans": "交通法案"
+  },
+  {
+    "id": 84,
+    "word": "bind",
+    "trans": "捆綁",
+    "sentence": "Use the tape to bind the files",
+    "sentenceTrans": "用膠帶把檔案捆綁住"
+  },
+  {
+    "id": 85,
+    "word": "blame",
+    "trans": "責怪",
+    "sentence": "I won't blame you for any losses",
+    "sentenceTrans": "我不會因為有損失而責怪你"
+  },
+  {
+    "id": 86,
+    "word": "blank",
+    "trans": "空白的",
+    "sentence": "Fill in your name on the blank space",
+    "sentenceTrans": "在空白處填寫名字"
+  },
+  {
+    "id": 87,
+    "word": "block",
+    "trans": "阻擋",
+    "sentence": "Their houses are blocked by trees",
+    "sentenceTrans": "他們的房子被樹擋住了"
+  },
+  {
+    "id": 88,
+    "word": "blueprint",
+    "trans": "藍圖",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 89,
+    "word": "bonus",
+    "trans": "紅利",
+    "sentence": "Receive significant portions of bonuses",
+    "sentenceTrans": "領到一大筆的紅利"
+  },
+  {
+    "id": 90,
+    "word": "boom",
+    "trans": "暴漲",
+    "sentence": "The boom in PDAs' popularity",
+    "sentenceTrans": "人氣的暴漲"
+  },
+  {
+    "id": 91,
+    "word": "boost",
+    "trans": "促進",
+    "sentence": "Gave our morale a large boost",
+    "sentenceTrans": "讓我們的士氣大振"
+  },
+  {
+    "id": 92,
+    "word": "border",
+    "trans": "邊界",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 93,
+    "word": "bounce",
+    "trans": "彈回",
+    "sentence": "Call off the deal because of the bounced check",
+    "sentenceTrans": "因支票跳票而取消交易"
+  },
+  {
+    "id": 94,
+    "word": "brand",
+    "trans": "品牌",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 95,
+    "word": "breach",
+    "trans": "違反",
+    "sentence": "His action was a breach of the law",
+    "sentenceTrans": "他的行為有違...法"
+  },
+  {
+    "id": 96,
+    "word": "breakthrough",
+    "trans": "突破",
+    "sentence": "Make a major breakthrough",
+    "sentenceTrans": "有重大突破"
+  },
+  {
+    "id": 97,
+    "word": "bribe",
+    "trans": "賄賂",
+    "sentence": "Bribe the commissioners",
+    "sentenceTrans": "賄賂委員"
+  },
+  {
+    "id": 98,
+    "word": "brief",
+    "trans": "做簡報",
+    "sentence": "Brief the consultants",
+    "sentenceTrans": "向顧問們做簡報"
+  },
+  {
+    "id": 99,
+    "word": "browse",
+    "trans": "瀏覽",
+    "sentence": "Browse through magazines",
+    "sentenceTrans": "翻閱雜誌"
+  },
+  {
+    "id": 100,
+    "word": "Built-in",
+    "trans": "內建的",
+    "sentence": "This laptop has a built-in DVD burner",
+    "sentenceTrans": "內建燒錄器"
+  },
+  {
+    "id": 101,
+    "word": "bulk",
+    "trans": "大量",
+    "sentence": "Sent them by bulk mail",
+    "sentenceTrans": "寄大宗郵件"
+  },
+  {
+    "id": 102,
+    "word": "bulldozer",
+    "trans": "壓路機",
+    "sentence": "The bulldozer is leveling the ground",
+    "sentenceTrans": "壓路機正在整地"
+  },
+  {
+    "id": 103,
+    "word": "Buyer's market",
+    "trans": "買方市場",
+    "sentence": "It's a buyer's market in housing now",
+    "sentenceTrans": "目前房市供過於求"
+  }
+        ],
+
+        2: [
+            // 請在此處加入 List 2 的單字資料，格式同上
+  {
+    "id": 104,
+    "word": "calculate",
+    "trans": "考量",
+    "sentence": "Calculate the poosible effects of the changes",
+    "sentenceTrans": "考量改變的可能影響"
+  },
+  {
+    "id": 105,
+    "word": "candidate",
+    "trans": "候選人",
+    "sentence": "Presidential candidates",
+    "sentenceTrans": "總統候選人"
+  },
+  {
+    "id": 106,
+    "word": "capacity",
+    "trans": "容量",
+    "sentence": "A productive capacity of 300 computers a day",
+    "sentenceTrans": "一天三百台電腦的生產量"
+  },
+  {
+    "id": 107,
+    "word": "capital",
+    "trans": "資金",
+    "sentence": "Need more capital to expand factory",
+    "sentenceTrans": "需要更多資金擴廠"
+  },
+  {
+    "id": 108,
+    "word": "cargo",
+    "trans": "貨物",
+    "sentence": "Work on the cargo",
+    "sentenceTrans": "處理貨物"
+  },
+  {
+    "id": 109,
+    "word": "carousel",
+    "trans": "行李轉盤",
+    "sentence": "Collect luggage from the carousel",
+    "sentenceTrans": "從轉盤上把行李取下來"
+  },
+  {
+    "id": 110,
+    "word": "carpool",
+    "trans": "共乘",
+    "sentence": "Encourage our workers to carpool",
+    "sentenceTrans": "鼓勵員工共乘"
+  },
+  {
+    "id": 111,
+    "word": "cautious",
+    "trans": "謹慎的",
+    "sentence": "We are very cautious about using chemicals",
+    "sentenceTrans": "非常謹慎使用化學藥劑"
+  },
+  {
+    "id": 112,
+    "word": "certify",
+    "trans": "認證",
+    "sentence": "These foods are certified 100% natural",
+    "sentenceTrans": "經過認證的百分百天然食品"
+  },
+  {
+    "id": 113,
+    "word": "chart",
+    "trans": "圖表",
+    "sentence": "Weather chart",
+    "sentenceTrans": "氣象圖"
+  },
+  {
+    "id": 114,
+    "word": "circumspect",
+    "trans": "謹慎的",
+    "sentence": "Be circumspect in investments",
+    "sentenceTrans": "對於投資很謹慎"
+  },
+  {
+    "id": 115,
+    "word": "claim",
+    "trans": "領取",
+    "sentence": "Claim our baggage",
+    "sentenceTrans": "領行李"
+  },
+  {
+    "id": 116,
+    "word": "clarify",
+    "trans": "說明",
+    "sentence": "We would like you to clarify this report",
+    "sentenceTrans": "需要你說明這份報告"
+  },
+  {
+    "id": 117,
+    "word": "classify",
+    "trans": "分類",
+    "sentence": "Classify these files into different types",
+    "sentenceTrans": "將檔案做不同的分類"
+  },
+  {
+    "id": 118,
+    "word": "clearance",
+    "trans": "清空",
+    "sentence": "Clearance sale",
+    "sentenceTrans": "清倉大拍賣"
+  },
+  {
+    "id": 119,
+    "word": "code",
+    "trans": "號碼",
+    "sentence": "Telephone area code",
+    "sentenceTrans": "電話區域號碼"
+  },
+  {
+    "id": 120,
+    "word": "command",
+    "trans": "命令",
+    "sentence": "He command the entire staff to",
+    "sentenceTrans": "他命令所有員工..."
+  },
+  {
+    "id": 121,
+    "word": "commission",
+    "trans": "委託",
+    "sentence": "He commission Mr. to ...",
+    "sentenceTrans": "委託幫忙..."
+  },
+  {
+    "id": 122,
+    "word": "commute",
+    "trans": "通勤",
+    "sentence": "Commute from Taipei to Taichung",
+    "sentenceTrans": "從台北通車到台中"
+  },
+  {
+    "id": 123,
+    "word": "compatible",
+    "trans": "可相容的",
+    "sentence": "This software is not compatible with my computer",
+    "sentenceTrans": "這套軟體跟我的電腦不相容"
+  },
+  {
+    "id": 124,
+    "word": "compensation",
+    "trans": "補償",
+    "sentence": "Provide compensation for the loss",
+    "sentenceTrans": "補償損失"
+  },
+  {
+    "id": 125,
+    "word": "competent",
+    "trans": "適任的",
+    "sentence": "Someone competent enough for the job",
+    "sentenceTrans": "可勝任這個職務的人"
+  },
+  {
+    "id": 126,
+    "word": "compile",
+    "trans": "編撰",
+    "sentence": "It took him a month to compile this annual report",
+    "sentenceTrans": "他花了一個月的時間編纂這份年度報告"
+  },
+  {
+    "id": 127,
+    "word": "compliment",
+    "trans": "稱讚",
+    "sentence": "Knows when to pay his workers compliments",
+    "sentenceTrans": "知道何時該稱讚員工"
+  },
+  {
+    "id": 128,
+    "word": "conclusion",
+    "trans": "結論",
+    "sentence": "Come to the conclusion that",
+    "sentenceTrans": "得到一個結論"
+  },
+  {
+    "id": 129,
+    "word": "concrete",
+    "trans": "具體的",
+    "sentence": "Providing some compensation is more concrete than an apology",
+    "sentenceTrans": "比起道歉,補償是比較具體的做法"
+  },
+  {
+    "id": 130,
+    "word": "confidential",
+    "trans": "機密的",
+    "sentence": "Leaking confidential information",
+    "sentenceTrans": "洩露機密"
+  },
+  {
+    "id": 131,
+    "word": "conform",
+    "trans": "符合",
+    "sentence": "Conform with new safety standards",
+    "sentenceTrans": "符合新的安全規範"
+  },
+  {
+    "id": 132,
+    "word": "connection",
+    "trans": "關係",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 133,
+    "word": "consensus",
+    "trans": "共識",
+    "sentence": "Reach a consensus",
+    "sentenceTrans": "達成共識"
+  },
+  {
+    "id": 134,
+    "word": "considerable",
+    "trans": "相當多的",
+    "sentence": "He has a considerable income",
+    "sentenceTrans": "他的收入頗高"
+  },
+  {
+    "id": 135,
+    "word": "consistent",
+    "trans": "持續的",
+    "sentence": "Consistent improvement",
+    "sentenceTrans": "持續的進步"
+  },
+  {
+    "id": 136,
+    "word": "consolidation",
+    "trans": "強化",
+    "sentence": "Good for the consolidation of bones",
+    "sentenceTrans": "有助於骨骼的強化"
+  },
+  {
+    "id": 137,
+    "word": "construction",
+    "trans": "施工",
+    "sentence": "Is still under construction",
+    "sentenceTrans": "仍在施工中"
+  },
+  {
+    "id": 138,
+    "word": "consult",
+    "trans": "諮詢",
+    "sentence": "Consult a lawyer first",
+    "sentenceTrans": "先請教過律師"
+  },
+  {
+    "id": 139,
+    "word": "cooperation",
+    "trans": "合作",
+    "sentence": "Need your cooperation in developing",
+    "sentenceTrans": "需要你的合作"
+  },
+  {
+    "id": 140,
+    "word": "corruption",
+    "trans": "貪污",
+    "sentence": "Resign because of his charges of corruption",
+    "sentenceTrans": "因貪污的指控而辭職"
+  },
+  {
+    "id": 141,
+    "word": "coupon",
+    "trans": "折價券",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 142,
+    "word": "credentials",
+    "trans": "資格",
+    "sentence": "The first applicant has the best credentials",
+    "sentenceTrans": "第一位申請者的資格最好"
+  },
+  {
+    "id": 143,
+    "word": "credibility",
+    "trans": "信用",
+    "sentence": "Lose our credibility with the public",
+    "sentenceTrans": "失去大眾的信任"
+  },
+  {
+    "id": 144,
+    "word": "criterion",
+    "trans": "標準",
+    "sentence": "Against employment criteria",
+    "sentenceTrans": "違反任用標準"
+  },
+  {
+    "id": 145,
+    "word": "critical",
+    "trans": "危急的",
+    "sentence": "In critical condition",
+    "sentenceTrans": "情況危急"
+  },
+  {
+    "id": 146,
+    "word": "crucial",
+    "trans": "關鍵的",
+    "sentence": "The meeting is crucial to the future",
+    "sentenceTrans": "會議是個關鍵"
+  },
+  {
+    "id": 147,
+    "word": "customize",
+    "trans": "量身訂做",
+    "sentence": "Customize furniture to your needs",
+    "sentenceTrans": "依需求訂做家具"
+  },
+  {
+    "id": 148,
+    "word": "deadlock",
+    "trans": "僵局",
+    "sentence": "Negotiation deadlock",
+    "sentenceTrans": "談判僵局"
+  },
+  {
+    "id": 149,
+    "word": "deal",
+    "trans": "交易",
+    "sentence": "Make a deal with",
+    "sentenceTrans": "跟...做生意"
+  },
+  {
+    "id": 150,
+    "word": "debate",
+    "trans": "爭論",
+    "sentence": "Debate the issue",
+    "sentenceTrans": "爭論"
+  },
+  {
+    "id": 151,
+    "word": "debt",
+    "trans": "債務",
+    "sentence": "Be heavily in debt",
+    "sentenceTrans": "負債累累"
+  },
+  {
+    "id": 152,
+    "word": "declare",
+    "trans": "申報",
+    "sentence": "Have nothing to declare",
+    "sentenceTrans": "沒有東西要申報"
+  },
+  {
+    "id": 153,
+    "word": "decline",
+    "trans": "下滑",
+    "sentence": "Sales are on the decline",
+    "sentenceTrans": "業績在下滑中"
+  },
+  {
+    "id": 154,
+    "word": "deduct",
+    "trans": "扣除",
+    "sentence": "The fees will be deducted from your next monthly payment",
+    "sentenceTrans": "費用會從下次的付款當中扣除"
+  },
+  {
+    "id": 155,
+    "word": "defective",
+    "trans": "有瑕疵的",
+    "sentence": "Recall all of the defective products",
+    "sentenceTrans": "回收所有的瑕疵品"
+  },
+  {
+    "id": 156,
+    "word": "deficiency",
+    "trans": "缺點",
+    "sentence": "The most serious deficiency",
+    "sentenceTrans": "最大的缺點"
+  },
+  {
+    "id": 157,
+    "word": "deficit",
+    "trans": "赤字",
+    "sentence": "Make up for the deficit",
+    "sentenceTrans": "補足赤字"
+  },
+  {
+    "id": 158,
+    "word": "deflation",
+    "trans": "通貨緊縮",
+    "sentence": "Deflation is beginning to affect...",
+    "sentenceTrans": "通貨緊縮已經開始影響..."
+  },
+  {
+    "id": 159,
+    "word": "delegate",
+    "trans": "委派",
+    "sentence": "Be delegated to host the meeting",
+    "sentenceTrans": "被派去主持會議"
+  },
+  {
+    "id": 160,
+    "word": "deliberately",
+    "trans": "故意地",
+    "sentence": "Deliberately ignores complaints",
+    "sentenceTrans": "對抱怨故意視而不見"
+  },
+  {
+    "id": 161,
+    "word": "deliver",
+    "trans": "發表演說",
+    "sentence": "Deliver a speech",
+    "sentenceTrans": "發表演說"
+  },
+  {
+    "id": 162,
+    "word": "deluxe",
+    "trans": "高級的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 163,
+    "word": "demand",
+    "trans": "市場需求",
+    "sentence": "A great demand",
+    "sentenceTrans": "市場需求量很大"
+  },
+  {
+    "id": 164,
+    "word": "democracy",
+    "trans": "民主",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 165,
+    "word": "demolish",
+    "trans": "拆除",
+    "sentence": "Building is being demolished",
+    "sentenceTrans": "大樓正在被拆除"
+  },
+  {
+    "id": 166,
+    "word": "demonstration",
+    "trans": "示威遊行",
+    "sentence": "Participate in the demonstration",
+    "sentenceTrans": "參加示威遊行"
+  },
+  {
+    "id": 167,
+    "word": "demotion",
+    "trans": "降職",
+    "sentence": "Demotion was unfair",
+    "sentenceTrans": "降職不公平"
+  },
+  {
+    "id": 168,
+    "word": "denomination",
+    "trans": "面額",
+    "sentence": "Bills of large denomination",
+    "sentenceTrans": "大面額的鈔票"
+  },
+  {
+    "id": 169,
+    "word": "depict",
+    "trans": "描寫",
+    "sentence": "Depict him as a tyrant",
+    "sentenceTrans": "把他描寫成一名暴君"
+  },
+  {
+    "id": 170,
+    "word": "deposit",
+    "trans": "存款",
+    "sentence": "An initial deposit",
+    "sentenceTrans": "開戶首存金額"
+  },
+  {
+    "id": 171,
+    "word": "depreciate",
+    "trans": "貶值",
+    "sentence": "The car would be depreciated after being flooded",
+    "sentenceTrans": "車子泡過水之後就貶值了"
+  },
+  {
+    "id": 172,
+    "word": "depreciation",
+    "trans": "折舊",
+    "sentence": "Take into consideration the car's depreciation rate",
+    "sentenceTrans": "把車子的折舊率考慮進去"
+  },
+  {
+    "id": 173,
+    "word": "deserted",
+    "trans": "空無一人的",
+    "sentence": "The streets are deserted",
+    "sentenceTrans": "街道空無一人"
+  },
+  {
+    "id": 174,
+    "word": "designate",
+    "trans": "指定",
+    "sentence": "Be designated to take over the negotiation",
+    "sentenceTrans": "被指定接手談判"
+  },
+  {
+    "id": 175,
+    "word": "destination",
+    "trans": "終點站",
+    "sentence": "Arrived at the final destination",
+    "sentenceTrans": "抵達終點站"
+  },
+  {
+    "id": 176,
+    "word": "detect",
+    "trans": "偵測",
+    "sentence": "Detect virus",
+    "sentenceTrans": "偵測病毒"
+  },
+  {
+    "id": 177,
+    "word": "develop",
+    "trans": "開發",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 178,
+    "word": "device",
+    "trans": "裝置",
+    "sentence": "Recording device",
+    "sentenceTrans": "錄音設備"
+  },
+  {
+    "id": 179,
+    "word": "dig",
+    "trans": "挖掘",
+    "sentence": "Dig under the building to lay the cables",
+    "sentenceTrans": "在大樓下方挖洞埋設電纜線"
+  },
+  {
+    "id": 180,
+    "word": "diminish",
+    "trans": "減弱",
+    "sentence": "Product's diminishing popularity",
+    "sentenceTrans": "產品的人氣下滑"
+  },
+  {
+    "id": 181,
+    "word": "diplomatic",
+    "trans": "委婉的",
+    "sentence": "Work out problems in a more diplomatic way",
+    "sentenceTrans": "用比較委婉的方式解決問題"
+  },
+  {
+    "id": 182,
+    "word": "directory",
+    "trans": "通訊錄",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 183,
+    "word": "disaster",
+    "trans": "災害",
+    "sentence": "An official disaster area",
+    "sentenceTrans": "正式災區"
+  },
+  {
+    "id": 184,
+    "word": "discern",
+    "trans": "辨識",
+    "sentence": "No one can discern such minute differences",
+    "sentenceTrans": "沒人能夠辨識出這麼細微的差異"
+  },
+  {
+    "id": 185,
+    "word": "discipline",
+    "trans": "紀律",
+    "sentence": "Order and discipline are highly valued in our company",
+    "sentenceTrans": "我們公司非常重視命令與紀律"
+  },
+  {
+    "id": 186,
+    "word": "discount",
+    "trans": "打折",
+    "sentence": "Purchases will be discounted",
+    "sentenceTrans": "有打折"
+  },
+  {
+    "id": 187,
+    "word": "discrepancy",
+    "trans": "不一致",
+    "sentence": "There's a distinct discrepancy between...",
+    "sentenceTrans": "有明顯的出入"
+  },
+  {
+    "id": 188,
+    "word": "disorder",
+    "trans": "混亂",
+    "sentence": "The lobby is in disorder",
+    "sentenceTrans": "大廳陷入一片混亂"
+  },
+  {
+    "id": 189,
+    "word": "display",
+    "trans": "展示",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 190,
+    "word": "disposable",
+    "trans": "可拋式的",
+    "sentence": "Disposable paper cups",
+    "sentenceTrans": "免洗紙杯"
+  },
+  {
+    "id": 191,
+    "word": "dispute",
+    "trans": "爭辯",
+    "sentence": "Resovle labor disputes",
+    "sentenceTrans": "解決勞資糾紛"
+  },
+  {
+    "id": 192,
+    "word": "distinction",
+    "trans": "差異點",
+    "sentence": "No one can see the distinction between them",
+    "sentenceTrans": "沒人看得出來他們之間的差異"
+  },
+  {
+    "id": 193,
+    "word": "distinguish",
+    "trans": "辨別",
+    "sentence": "Can't distinguish right from wrong",
+    "sentenceTrans": "無法明辨是非"
+  },
+  {
+    "id": 194,
+    "word": "distribute",
+    "trans": "分發",
+    "sentence": "Distribute flyers",
+    "sentenceTrans": "發送傳單"
+  },
+  {
+    "id": 195,
+    "word": "diversity",
+    "trans": "多樣性",
+    "sentence": "Cultural diversity",
+    "sentenceTrans": "文化多樣性"
+  },
+  {
+    "id": 196,
+    "word": "dominant",
+    "trans": "主導的",
+    "sentence": "Maintain dominant position in the company",
+    "sentenceTrans": "維持在公司的主導地位"
+  },
+  {
+    "id": 197,
+    "word": "donate",
+    "trans": "捐贈",
+    "sentence": "Donate 2 million dollars to a charity foundation",
+    "sentenceTrans": "捐給慈善基金會"
+  },
+  {
+    "id": 198,
+    "word": "doubt",
+    "trans": "懷疑",
+    "sentence": "Without a doubt",
+    "sentenceTrans": "無疑"
+  },
+  {
+    "id": 199,
+    "word": "drift",
+    "trans": "漂流",
+    "sentence": "The boat is drifting along the stream",
+    "sentenceTrans": "船沿著小溪漂流"
+  },
+  {
+    "id": 200,
+    "word": "drill",
+    "trans": "練習",
+    "sentence": "Perform a fire drill",
+    "sentenceTrans": "進行一次消防演習"
+  },
+  {
+    "id": 201,
+    "word": "due",
+    "trans": "到期",
+    "sentence": "The first installment is due",
+    "sentenceTrans": "首期分期付款到期"
+  },
+  {
+    "id": 202,
+    "word": "duplicate",
+    "trans": "複製品",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 203,
+    "word": "duty",
+    "trans": "責任",
+    "sentence": "Job duty",
+    "sentenceTrans": "職責"
+  }
+        ],
+
+        3: [
+ {
+    "id": 204,
+    "word": "economical",
+    "trans": "省錢的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 205,
+    "word": "edit",
+    "trans": "編撰",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 206,
+    "word": "elaborate",
+    "trans": "詳細說明",
+    "sentence": "Would you like to elaborate on that?",
+    "sentenceTrans": "您可以解釋清楚一點嗎?"
+  },
+  {
+    "id": 207,
+    "word": "election",
+    "trans": "選舉",
+    "sentence": "Presidential election",
+    "sentenceTrans": "總統大選"
+  },
+  {
+    "id": 208,
+    "word": "elementary",
+    "trans": "基本的",
+    "sentence": "Elementary computer skills",
+    "sentenceTrans": "基本的電腦技能"
+  },
+  {
+    "id": 209,
+    "word": "embargo",
+    "trans": "禁運",
+    "sentence": "Put an oil embargo out against them",
+    "sentenceTrans": "下令禁止輸出石油給他們"
+  },
+  {
+    "id": 210,
+    "word": "embark",
+    "trans": "搭機/上船",
+    "sentence": "Embark from Taipei in three hours",
+    "sentenceTrans": "三小時內於台北登機"
+  },
+  {
+    "id": 211,
+    "word": "embezzle",
+    "trans": "盜用公款",
+    "sentence": "Embezzle 1000 dollars",
+    "sentenceTrans": "盜用一千元"
+  },
+  {
+    "id": 212,
+    "word": "emergency",
+    "trans": "緊急",
+    "sentence": "In case of an emergency",
+    "sentenceTrans": "萬一有緊急事故"
+  },
+  {
+    "id": 213,
+    "word": "emphasize",
+    "trans": "強調",
+    "sentence": "I'd like to emphasize that....",
+    "sentenceTrans": "我想強調的是"
+  },
+  {
+    "id": 214,
+    "word": "employ",
+    "trans": "僱用",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 215,
+    "word": "enclose",
+    "trans": "隨函附上",
+    "sentence": "I have enclosed a check of 300 dollars",
+    "sentenceTrans": "我隨信附上"
+  },
+  {
+    "id": 216,
+    "word": "encounter",
+    "trans": "遭遇到",
+    "sentence": "We've encounted some problems",
+    "sentenceTrans": "我們遭遇到一些問題"
+  },
+  {
+    "id": 217,
+    "word": "endorse",
+    "trans": "背書",
+    "sentence": "This project is endorsed by the consultants",
+    "sentenceTrans": "這個案子有顧問們的背書支持"
+  },
+  {
+    "id": 218,
+    "word": "endure",
+    "trans": "支撐",
+    "sentence": "These shelters won't endure much longer without power",
+    "sentenceTrans": "沒有電動話,這些避難所撐不了多久"
+  },
+  {
+    "id": 219,
+    "word": "enforcement",
+    "trans": "執行",
+    "sentence": "Law enforcement",
+    "sentenceTrans": "執法"
+  },
+  {
+    "id": 220,
+    "word": "engrave",
+    "trans": "雕刻",
+    "sentence": "Ring can be engraved with your names",
+    "sentenceTrans": "戒指可以刻上你們的名字"
+  },
+  {
+    "id": 221,
+    "word": "enlarge",
+    "trans": "擴大",
+    "sentence": "The school decided to enlarge its library",
+    "sentenceTrans": "校方決定擴建圖書館"
+  },
+  {
+    "id": 222,
+    "word": "enroll",
+    "trans": "報名",
+    "sentence": "His parents had enrolled him in painting classes",
+    "sentenceTrans": "他父母幫他報名過繪畫班"
+  },
+  {
+    "id": 223,
+    "word": "ensemble",
+    "trans": "組合",
+    "sentence": "This scarf and your dress make a beautiful ensemble",
+    "sentenceTrans": "這條圍巾跟你的洋裝搭起來很好看"
+  },
+  {
+    "id": 224,
+    "word": "ensure",
+    "trans": "確保",
+    "sentence": "Ensure the quality of services",
+    "sentenceTrans": "確保服務品質"
+  },
+  {
+    "id": 225,
+    "word": "enter",
+    "trans": "參加",
+    "sentence": "Enter the beauty contest",
+    "sentenceTrans": "參加選美比賽"
+  },
+  {
+    "id": 226,
+    "word": "enterprise",
+    "trans": "企業",
+    "sentence": "Promote local enterprises",
+    "sentenceTrans": "促進地方事業"
+  },
+  {
+    "id": 227,
+    "word": "entertain",
+    "trans": "招待",
+    "sentence": "Entertain visitors",
+    "sentenceTrans": "招待客人"
+  },
+  {
+    "id": 228,
+    "word": "entitle",
+    "trans": "賦予資格",
+    "sentence": "You are entitled to use for free",
+    "sentenceTrans": "你可以免費使用"
+  },
+  {
+    "id": 229,
+    "word": "environment",
+    "trans": "環境",
+    "sentence": "A pleasant working environment",
+    "sentenceTrans": "舒適度工作環境"
+  },
+  {
+    "id": 230,
+    "word": "equal",
+    "trans": "相等的",
+    "sentence": "demand equal right at work",
+    "sentenceTrans": "要求工作權利平等"
+  },
+  {
+    "id": 231,
+    "word": "equip",
+    "trans": "配備",
+    "sentence": "Equip our car with an alarm system",
+    "sentenceTrans": "安裝防盜裝置"
+  },
+  {
+    "id": 232,
+    "word": "errand",
+    "trans": "差事",
+    "sentence": "run some errands",
+    "sentenceTrans": "辦點事"
+  },
+  {
+    "id": 233,
+    "word": "erratic",
+    "trans": "不穩定的",
+    "sentence": "Erratic rainfall",
+    "sentenceTrans": "不穩定的降雨"
+  },
+  {
+    "id": 234,
+    "word": "escalate",
+    "trans": "攀升",
+    "sentence": "Oil prices are escalating",
+    "sentenceTrans": "油價一直在攀升"
+  },
+  {
+    "id": 235,
+    "word": "escort",
+    "trans": "隨扈",
+    "sentence": "The queen has arrived at hotel under escort",
+    "sentenceTrans": "在護送之下抵達"
+  },
+  {
+    "id": 236,
+    "word": "essential",
+    "trans": "必要的",
+    "sentence": "Water is essential to the growth of those plants",
+    "sentenceTrans": "水對這些植物的生長是必要的"
+  },
+  {
+    "id": 237,
+    "word": "establishment",
+    "trans": "事業體",
+    "sentence": "A well-run establishment",
+    "sentenceTrans": "經營的很成功的企業"
+  },
+  {
+    "id": 238,
+    "word": "estimate",
+    "trans": "預估",
+    "sentence": "Estimate a delay of two months",
+    "sentenceTrans": "預估會落後兩個月"
+  },
+  {
+    "id": 239,
+    "word": "ethnic",
+    "trans": "民族的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 240,
+    "word": "etiquette",
+    "trans": "禮儀",
+    "sentence": "A common etiquette",
+    "sentenceTrans": "一般性禮儀"
+  },
+  {
+    "id": 241,
+    "word": "evacuate",
+    "trans": "撤離",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 242,
+    "word": "evaluate",
+    "trans": "評估",
+    "sentence": "The market situation is hard to evaluate at this moment",
+    "sentenceTrans": "目前很難評估市場狀況"
+  },
+  {
+    "id": 243,
+    "word": "event",
+    "trans": "事件",
+    "sentence": "The huge sporting events",
+    "sentenceTrans": "重大的運動賽事"
+  },
+  {
+    "id": 244,
+    "word": "evidence",
+    "trans": "證據",
+    "sentence": "Destroy all the evidence",
+    "sentenceTrans": "湮滅所有的證據"
+  },
+  {
+    "id": 245,
+    "word": "examine",
+    "trans": "檢查",
+    "sentence": "The health inspector examine the fruits",
+    "sentenceTrans": "衛生局的檢查員檢查水果"
+  },
+  {
+    "id": 246,
+    "word": "excel",
+    "trans": "表現優秀",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 247,
+    "word": "exclusive",
+    "trans": "獨占的",
+    "sentence": "Club members have exclusive use of the tennis court",
+    "sentenceTrans": "這個網球場只限會員獨享"
+  },
+  {
+    "id": 248,
+    "word": "executive",
+    "trans": "主管",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 249,
+    "word": "exemption",
+    "trans": "免除",
+    "sentence": "Tax exemption",
+    "sentenceTrans": "免稅"
+  },
+  {
+    "id": 250,
+    "word": "exhibition",
+    "trans": "展覽",
+    "sentence": "Picasso paintings are on the exhibition",
+    "sentenceTrans": "正在展出"
+  },
+  {
+    "id": 251,
+    "word": "exit",
+    "trans": "出口",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 252,
+    "word": "expand",
+    "trans": "擴大",
+    "sentence": "Expand the size of stock room",
+    "sentenceTrans": "擴建儲藏室"
+  },
+  {
+    "id": 253,
+    "word": "expense",
+    "trans": "開支",
+    "sentence": "Expense account",
+    "sentenceTrans": "開支賬戶"
+  },
+  {
+    "id": 254,
+    "word": "expiration",
+    "trans": "到期",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 255,
+    "word": "explicit",
+    "trans": "明確的",
+    "sentence": "More explicit instructions",
+    "sentenceTrans": "更明確的指示"
+  },
+  {
+    "id": 256,
+    "word": "exploit",
+    "trans": "剝削",
+    "sentence": "Exploit workers by paying low wages",
+    "sentenceTrans": "以低薪來剝削員工"
+  },
+  {
+    "id": 257,
+    "word": "express",
+    "trans": "快速的",
+    "sentence": "Sent the package by express delivery",
+    "sentenceTrans": "將包裹用快遞寄出去"
+  },
+  {
+    "id": 258,
+    "word": "extend",
+    "trans": "延長",
+    "sentence": "Extend the quarantee by paying ten extra dollars",
+    "sentenceTrans": "多付10元美金延長保固"
+  },
+  {
+    "id": 259,
+    "word": "fabulous",
+    "trans": "很棒的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 260,
+    "word": "facade",
+    "trans": "門面",
+    "sentence": "Repair to its façade",
+    "sentenceTrans": "修整門面"
+  },
+  {
+    "id": 261,
+    "word": "facility",
+    "trans": "設施",
+    "sentence": "Receational facilities",
+    "sentenceTrans": "休閒設施"
+  },
+  {
+    "id": 262,
+    "word": "fake",
+    "trans": "仿冒品",
+    "sentence": "Confirm that it is a fake",
+    "sentenceTrans": "證實是個仿冒品"
+  },
+  {
+    "id": 263,
+    "word": "familiar",
+    "trans": "熟悉的",
+    "sentence": "Be familiar with the tax laws",
+    "sentenceTrans": "熟悉稅務法"
+  },
+  {
+    "id": 264,
+    "word": "fare",
+    "trans": "交通費",
+    "sentence": "Bus fare",
+    "sentenceTrans": "公車錢"
+  },
+  {
+    "id": 265,
+    "word": "fasten",
+    "trans": "綁緊",
+    "sentence": "Fasten your seatbelt",
+    "sentenceTrans": "繫上安全帶"
+  },
+  {
+    "id": 266,
+    "word": "feasibility",
+    "trans": "可行性",
+    "sentence": "Stufy the feasibility",
+    "sentenceTrans": "研究可行性"
+  },
+  {
+    "id": 267,
+    "word": "feedback",
+    "trans": "意見",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 268,
+    "word": "festival",
+    "trans": "慶祝活動",
+    "sentence": "Music festival",
+    "sentenceTrans": "音樂慶典"
+  },
+  {
+    "id": 269,
+    "word": "fiction",
+    "trans": "小說",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 270,
+    "word": "figure",
+    "trans": "數字",
+    "sentence": "The unemployment figures are getting lower",
+    "sentenceTrans": "失業率下降中"
+  },
+  {
+    "id": 271,
+    "word": "file",
+    "trans": "提出",
+    "sentence": "File a complaint",
+    "sentenceTrans": "提出申訴"
+  },
+  {
+    "id": 272,
+    "word": "finalize",
+    "trans": "完成",
+    "sentence": "Finalize the contract",
+    "sentenceTrans": "完成合約"
+  },
+  {
+    "id": 273,
+    "word": "financial",
+    "trans": "財務上的",
+    "sentence": "Financial adviser",
+    "sentenceTrans": "財務顧問"
+  },
+  {
+    "id": 274,
+    "word": "forbid",
+    "trans": "禁止",
+    "sentence": "Forbid the addition of certain chemicals",
+    "sentenceTrans": "禁止特定的化學添加物"
+  },
+  {
+    "id": 275,
+    "word": "forecast",
+    "trans": "預報",
+    "sentence": "The weather forecast",
+    "sentenceTrans": "氣象預報"
+  },
+  {
+    "id": 276,
+    "word": "foresee",
+    "trans": "預料",
+    "sentence": "Foresee the problem long ago",
+    "sentenceTrans": "老早預料到會發生問題"
+  },
+  {
+    "id": 277,
+    "word": "forfeit",
+    "trans": "喪失",
+    "sentence": "All his possessions were forfeited by the government",
+    "sentenceTrans": "所有的財產都被政府沒收"
+  },
+  {
+    "id": 278,
+    "word": "formula",
+    "trans": "配方",
+    "sentence": "The formula for salad dressing",
+    "sentenceTrans": "沙拉醬配方"
+  },
+  {
+    "id": 279,
+    "word": "fortify",
+    "trans": "強化",
+    "sentence": "It is especially fortified with calcium",
+    "sentenceTrans": "它特別強化鈣質"
+  },
+  {
+    "id": 280,
+    "word": "fortune",
+    "trans": "財富",
+    "sentence": "He won a fortune by playing the lottery",
+    "sentenceTrans": "他玩樂透中了一大筆錢"
+  },
+  {
+    "id": 281,
+    "word": "forum",
+    "trans": "論壇",
+    "sentence": "Hold a forum",
+    "sentenceTrans": "舉辦一場論壇"
+  },
+  {
+    "id": 282,
+    "word": "forward",
+    "trans": "轉寄",
+    "sentence": "Forwarding address",
+    "sentenceTrans": "轉寄地址"
+  },
+  {
+    "id": 283,
+    "word": "foundation",
+    "trans": "基礎",
+    "sentence": "Solid academic foundation",
+    "sentenceTrans": "紮實的學術基礎"
+  },
+  {
+    "id": 284,
+    "word": "fragile",
+    "trans": "易碎的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 285,
+    "word": "fraud",
+    "trans": "詐欺",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 286,
+    "word": "freelance",
+    "trans": "自由工作者的",
+    "sentence": "Freelance worker",
+    "sentenceTrans": "自由工作者"
+  },
+  {
+    "id": 287,
+    "word": "freeze",
+    "trans": "凍結",
+    "sentence": "His assets were frozen by the government",
+    "sentenceTrans": "他的財產被政府凍結"
+  },
+  {
+    "id": 288,
+    "word": "freight",
+    "trans": "貨物",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 289,
+    "word": "fringe",
+    "trans": "邊緣",
+    "sentence": "One of the job's fringe benefits",
+    "sentenceTrans": "工作的福利之一"
+  },
+  {
+    "id": 290,
+    "word": "frustrate",
+    "trans": "使人沮喪",
+    "sentence": "This earnings report frustrated our sales team",
+    "sentenceTrans": "這份營收報告讓我們的銷售團隊覺得很沮喪"
+  },
+  {
+    "id": 291,
+    "word": "fulfill",
+    "trans": "滿足",
+    "sentence": "The vendor we've been working with should fulfill our requirements",
+    "sentenceTrans": "向來與我們合作的廠商應該可以滿足我們的需求"
+  },
+  {
+    "id": 292,
+    "word": "functional",
+    "trans": "可使用的",
+    "sentence": "The smoke alarms on all floors are fully functional",
+    "sentenceTrans": "每一樓的煙霧偵測器都很正常"
+  },
+  {
+    "id": 293,
+    "word": "fundamental",
+    "trans": "基礎的",
+    "sentence": "There is a fundamental difference between...",
+    "sentenceTrans": "基本上是不同的"
+  },
+  {
+    "id": 294,
+    "word": "furnished",
+    "trans": "附家具的",
+    "sentence": "Rent a furnished apartment",
+    "sentenceTrans": "租有附家具的公寓"
+  }
+], 
+
+        4: [
+  {
+    "id": 295,
+    "word": "gear",
+    "trans": "裝備",
+    "sentence": "Rain gear",
+    "sentenceTrans": "雨具"
+  },
+  {
+    "id": 296,
+    "word": "general",
+    "trans": "一般的",
+    "sentence": "General use",
+    "sentenceTrans": "一般使用"
+  },
+  {
+    "id": 297,
+    "word": "generate",
+    "trans": "衍生",
+    "sentence": "Generate new problems",
+    "sentenceTrans": "衍生新問題"
+  },
+  {
+    "id": 298,
+    "word": "govern",
+    "trans": "決定",
+    "sentence": "The price is governed by...",
+    "sentenceTrans": "價格是由...來決定"
+  },
+  {
+    "id": 299,
+    "word": "grade",
+    "trans": "評比",
+    "sentence": "Be graded according to...",
+    "sentenceTrans": "依照...分級"
+  },
+  {
+    "id": 300,
+    "word": "gradual",
+    "trans": "漸進的",
+    "sentence": "Gradual increase",
+    "sentenceTrans": "漸漸增多"
+  },
+  {
+    "id": 301,
+    "word": "grant",
+    "trans": "授予",
+    "sentence": "Be granted the permission to...",
+    "sentenceTrans": "被授予許可做..."
+  },
+  {
+    "id": 302,
+    "word": "gratitude",
+    "trans": "感激",
+    "sentence": "Show gratitude",
+    "sentenceTrans": "展現謝意"
+  },
+  {
+    "id": 303,
+    "word": "guarantee",
+    "trans": "保證書",
+    "sentence": "One-year guarantee",
+    "sentenceTrans": "一年保固期"
+  },
+  {
+    "id": 304,
+    "word": "guidance",
+    "trans": "輔導",
+    "sentence": "Employment guidance",
+    "sentenceTrans": "就業輔導"
+  },
+  {
+    "id": 305,
+    "word": "Hands-on",
+    "trans": "實用的",
+    "sentence": "Hands-on knowledge",
+    "sentenceTrans": "實用的知識"
+  },
+  {
+    "id": 306,
+    "word": "harvest",
+    "trans": "收割",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 307,
+    "word": "hazard",
+    "trans": "危險",
+    "sentence": "Health hazard",
+    "sentenceTrans": "危害健康"
+  },
+  {
+    "id": 308,
+    "word": "High-rise",
+    "trans": "摩天樓",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 309,
+    "word": "hire",
+    "trans": "僱用",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 310,
+    "word": "hospitality",
+    "trans": "殷勤款待",
+    "sentence": "Impressed with the hospitality",
+    "sentenceTrans": "對好客印象深刻"
+  },
+  {
+    "id": 311,
+    "word": "host",
+    "trans": "主持",
+    "sentence": "Host a meeting",
+    "sentenceTrans": "主持會議"
+  },
+  {
+    "id": 312,
+    "word": "housing",
+    "trans": "住宅",
+    "sentence": "Low-cost housing",
+    "sentenceTrans": "低價住宅"
+  },
+  {
+    "id": 313,
+    "word": "humid",
+    "trans": "潮濕的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 314,
+    "word": "hurricane",
+    "trans": "颶風",
+    "sentence": "Issue hurricane watch",
+    "sentenceTrans": "發布颶風警報"
+  },
+  {
+    "id": 315,
+    "word": "inclement",
+    "trans": "惡劣的",
+    "sentence": "Inclement weather",
+    "sentenceTrans": "天候不佳"
+  },
+  {
+    "id": 316,
+    "word": "insomnia",
+    "trans": "失眠",
+    "sentence": "Insomnia pill",
+    "sentenceTrans": "安眠藥"
+  },
+  {
+    "id": 317,
+    "word": "interpret",
+    "trans": "翻譯",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 318,
+    "word": "intervene",
+    "trans": "介入",
+    "sentence": "Intervene to stabilize the market",
+    "sentenceTrans": "介入穩定市場"
+  },
+  {
+    "id": 319,
+    "word": "invalid",
+    "trans": "無效的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 320,
+    "word": "inventory",
+    "trans": "清單",
+    "sentence": "Take an inventory of the stock",
+    "sentenceTrans": "盤點庫存"
+  },
+  {
+    "id": 321,
+    "word": "invest",
+    "trans": "投資",
+    "sentence": "Invest the money in ...",
+    "sentenceTrans": "把錢投資到..."
+  },
+  {
+    "id": 322,
+    "word": "investigate",
+    "trans": "調查",
+    "sentence": "Investigate the accident",
+    "sentenceTrans": "調查意外"
+  },
+  {
+    "id": 323,
+    "word": "invoice",
+    "trans": "發票",
+    "sentence": "Issue the invoice",
+    "sentenceTrans": "開發票"
+  },
+  {
+    "id": 324,
+    "word": "irrelevant",
+    "trans": "不相干的",
+    "sentence": "Be irrelevant to...",
+    "sentenceTrans": "跟...不相關"
+  },
+  {
+    "id": 325,
+    "word": "isolate",
+    "trans": "隔離",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 326,
+    "word": "issue",
+    "trans": "發布",
+    "sentence": "Issue a statement",
+    "sentenceTrans": "發表聲明"
+  },
+  {
+    "id": 327,
+    "word": "issue",
+    "trans": "焦點",
+    "sentence": "Meeting's key issue",
+    "sentenceTrans": "會議的重點"
+  },
+  {
+    "id": 328,
+    "word": "itinerary",
+    "trans": "旅遊計劃",
+    "sentence": "Travel itinerary",
+    "sentenceTrans": "旅遊路線"
+  },
+  {
+    "id": 329,
+    "word": "janitor",
+    "trans": "管理員",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 330,
+    "word": "jaywalk",
+    "trans": "非法橫越馬路",
+    "sentence": "A ticket for jaywalking",
+    "sentenceTrans": "非法橫越馬路的罰單"
+  },
+  {
+    "id": 331,
+    "word": "judge",
+    "trans": "判斷",
+    "sentence": "Judge the effect of the change",
+    "sentenceTrans": "判斷改變的成效"
+  },
+  {
+    "id": 332,
+    "word": "justify",
+    "trans": "合理化",
+    "sentence": "File a report justifying the cost",
+    "sentenceTrans": "提交一份報告來解釋開銷"
+  },
+  {
+    "id": 333,
+    "word": "Know-how",
+    "trans": "技術",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 334,
+    "word": "label",
+    "trans": "貼標籤",
+    "sentence": "Lable the bottle",
+    "sentenceTrans": "瓶子貼標籤"
+  },
+  {
+    "id": 335,
+    "word": "lack",
+    "trans": "缺乏",
+    "sentence": "Lack confidence",
+    "sentenceTrans": "缺乏信心"
+  },
+  {
+    "id": 336,
+    "word": "landscape",
+    "trans": "景色",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 337,
+    "word": "last",
+    "trans": "持續",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 338,
+    "word": "launch",
+    "trans": "發起",
+    "sentence": "Launch a campaign to raise funds",
+    "sentenceTrans": "發起一項活動來募款"
+  },
+  {
+    "id": 339,
+    "word": "lease",
+    "trans": "租借",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 340,
+    "word": "legal",
+    "trans": "合法的",
+    "sentence": "Perfectly legal",
+    "sentenceTrans": "完全合法的"
+  },
+  {
+    "id": 341,
+    "word": "level",
+    "trans": "弄平",
+    "sentence": "Level the ground",
+    "sentenceTrans": "整地"
+  },
+  {
+    "id": 342,
+    "word": "liabilities",
+    "trans": "債務",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 343,
+    "word": "license",
+    "trans": "執照",
+    "sentence": "Apply for a license",
+    "sentenceTrans": "申請執照"
+  },
+  {
+    "id": 344,
+    "word": "lifestyle",
+    "trans": "生活方式",
+    "sentence": "Healthy lifestyle",
+    "sentenceTrans": "健康生活方式"
+  },
+  {
+    "id": 345,
+    "word": "limit",
+    "trans": "限制",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 346,
+    "word": "liquidate",
+    "trans": "清算財產",
+    "sentence": "Liquidate all the assets",
+    "sentenceTrans": "清算所有資產"
+  },
+  {
+    "id": 347,
+    "word": "lounge",
+    "trans": "休息室",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 348,
+    "word": "low",
+    "trans": "低落的",
+    "sentence": "Low season",
+    "sentenceTrans": "淡季"
+  },
+  {
+    "id": 349,
+    "word": "loyal",
+    "trans": "忠心的",
+    "sentence": "Be remained loyal",
+    "sentenceTrans": "忠心不二"
+  },
+  {
+    "id": 350,
+    "word": "luxury",
+    "trans": "奢侈品",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 351,
+    "word": "magnificent",
+    "trans": "豪華的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 352,
+    "word": "maintenance",
+    "trans": "維修",
+    "sentence": "Monthly maintenance",
+    "sentenceTrans": "例行維修"
+  },
+  {
+    "id": 353,
+    "word": "manage",
+    "trans": "設法完成",
+    "sentence": "Manage to finish",
+    "sentenceTrans": "設法完成"
+  },
+  {
+    "id": 354,
+    "word": "mandatory",
+    "trans": "強制性的",
+    "sentence": "Mandatory retirement age",
+    "sentenceTrans": "強制退休年齡"
+  },
+  {
+    "id": 355,
+    "word": "manipulate",
+    "trans": "操弄",
+    "sentence": "Manipulate the election",
+    "sentenceTrans": "操弄選舉"
+  },
+  {
+    "id": 356,
+    "word": "manufacture",
+    "trans": "製造",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 357,
+    "word": "march",
+    "trans": "前進",
+    "sentence": "March along the road",
+    "sentenceTrans": "沿著馬路前進"
+  },
+  {
+    "id": 358,
+    "word": "match",
+    "trans": "匹敵",
+    "sentence": "Can't be matched",
+    "sentenceTrans": "無與倫比的"
+  },
+  {
+    "id": 359,
+    "word": "mature",
+    "trans": "到期",
+    "sentence": "Saving plan mature",
+    "sentenceTrans": "定存到期"
+  },
+  {
+    "id": 360,
+    "word": "maximum",
+    "trans": "最大值",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 361,
+    "word": "measure",
+    "trans": "措施",
+    "sentence": "Take emergency measure",
+    "sentenceTrans": "採取緊急措施"
+  },
+  {
+    "id": 362,
+    "word": "merchandise",
+    "trans": "商品",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 363,
+    "word": "merger",
+    "trans": "合併",
+    "sentence": "Merger between two companies",
+    "sentenceTrans": "兩間公司合併"
+  },
+  {
+    "id": 364,
+    "word": "merit",
+    "trans": "績效",
+    "sentence": "Gave him a merit raise",
+    "sentenceTrans": "績效加薪"
+  },
+  {
+    "id": 365,
+    "word": "metropolitan",
+    "trans": "大都會的",
+    "sentence": "Metropolitan area",
+    "sentenceTrans": "大都會區"
+  },
+  {
+    "id": 366,
+    "word": "milestone",
+    "trans": "歷程碑",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 367,
+    "word": "minority",
+    "trans": "少數",
+    "sentence": "In the minority",
+    "sentenceTrans": "佔少數"
+  },
+  {
+    "id": 368,
+    "word": "miscellaneous",
+    "trans": "各式各樣的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 369,
+    "word": "misplace",
+    "trans": "錯放",
+    "sentence": "Be misplace in that job",
+    "sentenceTrans": "錯放在那個職位"
+  },
+  {
+    "id": 370,
+    "word": "mobilize",
+    "trans": "動員",
+    "sentence": "Mobilize all its resources to support",
+    "sentenceTrans": "動員所有資源"
+  },
+  {
+    "id": 371,
+    "word": "model",
+    "trans": "機種",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 372,
+    "word": "moderate",
+    "trans": "適當的",
+    "sentence": "Moderate demand",
+    "sentenceTrans": "適當的要求"
+  },
+  {
+    "id": 373,
+    "word": "modernize",
+    "trans": "使現代化",
+    "sentence": "Modernize the old apartment",
+    "sentenceTrans": "讓舊公寓變現代化"
+  },
+  {
+    "id": 374,
+    "word": "modest",
+    "trans": "少量的",
+    "sentence": "Modest rise in fuel prices",
+    "sentenceTrans": "油價輕微上漲"
+  },
+  {
+    "id": 375,
+    "word": "modify",
+    "trans": "調整",
+    "sentence": "Modify the settings to improve...",
+    "sentenceTrans": "調整設定來改善..."
+  },
+  {
+    "id": 376,
+    "word": "monopoly",
+    "trans": "壟斷事業",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 377,
+    "word": "moral",
+    "trans": "道德的",
+    "sentence": "Moral obligation",
+    "sentenceTrans": "道德上的責任"
+  },
+  {
+    "id": 378,
+    "word": "morale",
+    "trans": "士氣",
+    "sentence": "Low morale",
+    "sentenceTrans": "士氣低落"
+  },
+  {
+    "id": 379,
+    "word": "mortgage",
+    "trans": "房貸",
+    "sentence": "Mortgage rates",
+    "sentenceTrans": "房貸利率"
+  },
+  {
+    "id": 380,
+    "word": "motivated",
+    "trans": "積極的",
+    "sentence": "Remain very motivated",
+    "sentenceTrans": "表現積極"
+  },
+  {
+    "id": 381,
+    "word": "multiply",
+    "trans": "增加",
+    "sentence": "Spending has multiplied",
+    "sentenceTrans": "費用已經倍增"
+  },
+  {
+    "id": 382,
+    "word": "mushroom",
+    "trans": "激增",
+    "sentence": "Food stands have mushroomed",
+    "sentenceTrans": "小吃攤數量激增"
+  },
+  {
+    "id": 383,
+    "word": "mutual",
+    "trans": "互相的",
+    "sentence": "Agreement for mutual benefit",
+    "sentenceTrans": "互相有利的協議"
+  }
+], 
+        5: [
+ {
+    "id": 384,
+    "word": "nationality",
+    "trans": "國籍",
+    "sentence": "Experts of different nationalities",
+    "sentenceTrans": "不同國籍的專家"
+  },
+  {
+    "id": 385,
+    "word": "native",
+    "trans": "本地的",
+    "sentence": "Native fruits",
+    "sentenceTrans": "國產水果"
+  },
+  {
+    "id": 386,
+    "word": "neat",
+    "trans": "整齊的",
+    "sentence": "Keep the office neat and tidy",
+    "sentenceTrans": "維持辦公室的整潔"
+  },
+  {
+    "id": 387,
+    "word": "necessity",
+    "trans": "必需品",
+    "sentence": "Spends money on necessities instead of luxuries",
+    "sentenceTrans": "把錢花在必需品而非奢侈品上"
+  },
+  {
+    "id": 388,
+    "word": "negatively",
+    "trans": "負面的",
+    "sentence": "Project won't be negatively affected by his resignation",
+    "sentenceTrans": "企劃案不會受到他辭職的負面影響"
+  },
+  {
+    "id": 389,
+    "word": "neutral",
+    "trans": "中立的",
+    "sentence": "Neutral analysis",
+    "sentenceTrans": "中立的分析"
+  },
+  {
+    "id": 390,
+    "word": "normal",
+    "trans": "正常的",
+    "sentence": "Services are now back to normal",
+    "sentenceTrans": "服務目前已經恢復正常"
+  },
+  {
+    "id": 391,
+    "word": "notable",
+    "trans": "顯著的",
+    "sentence": "Notable improvement",
+    "sentenceTrans": "顯著的改變"
+  },
+  {
+    "id": 392,
+    "word": "notify",
+    "trans": "通知",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 393,
+    "word": "novelty",
+    "trans": "新奇的產品",
+    "sentence": "Novelties like ipods",
+    "sentenceTrans": "像 ipod 之類的新鮮貨"
+  },
+  {
+    "id": 394,
+    "word": "nullify",
+    "trans": "廢除",
+    "sentence": "Your vote was nullified without your signature",
+    "sentenceTrans": "你的選票因為沒有簽名而作廢了"
+  },
+  {
+    "id": 395,
+    "word": "obedience",
+    "trans": "服從",
+    "sentence": "Show absolute obedience to his orders",
+    "sentenceTrans": "對他的命令絕對服從"
+  },
+  {
+    "id": 396,
+    "word": "object",
+    "trans": "反對",
+    "sentence": "Strongly object",
+    "sentenceTrans": "強烈反對"
+  },
+  {
+    "id": 397,
+    "word": "objective",
+    "trans": "客觀的",
+    "sentence": "An objective analysis",
+    "sentenceTrans": "客觀的分析"
+  },
+  {
+    "id": 398,
+    "word": "obligation",
+    "trans": "職責",
+    "sentence": "Legal obligation",
+    "sentenceTrans": "法律責任"
+  },
+  {
+    "id": 399,
+    "word": "obliged",
+    "trans": "一定得做的",
+    "sentence": "We are obliged to ship orders before the deadline",
+    "sentenceTrans": "我們一定得在期限之前出貨"
+  },
+  {
+    "id": 400,
+    "word": "observation",
+    "trans": "觀察",
+    "sentence": "The wounded are in the hospital under careful observation",
+    "sentenceTrans": "傷患目前住院仔細觀察中"
+  },
+  {
+    "id": 401,
+    "word": "obstacle",
+    "trans": "障礙",
+    "sentence": "Low morale remains an obstacle to...",
+    "sentenceTrans": "低迷的士氣是....的障礙"
+  },
+  {
+    "id": 402,
+    "word": "obstruct",
+    "trans": "阻礙",
+    "sentence": "A car obstructed the traffic",
+    "sentenceTrans": "一部轎車阻礙了交通"
+  },
+  {
+    "id": 403,
+    "word": "obtain",
+    "trans": "取得",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 404,
+    "word": "obvious",
+    "trans": "明顯的",
+    "sentence": "Obvious mistake",
+    "sentenceTrans": "明顯的錯誤"
+  },
+  {
+    "id": 405,
+    "word": "occasion",
+    "trans": "場合",
+    "sentence": "On special occasion",
+    "sentenceTrans": "在特殊的場合"
+  },
+  {
+    "id": 406,
+    "word": "occupational",
+    "trans": "職業的",
+    "sentence": "Occupational hazard",
+    "sentenceTrans": "職業風險"
+  },
+  {
+    "id": 407,
+    "word": "occupy",
+    "trans": "佔據",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 408,
+    "word": "occur",
+    "trans": "發生",
+    "sentence": "The accident occurred",
+    "sentenceTrans": "意外發生"
+  },
+  {
+    "id": 409,
+    "word": "offer",
+    "trans": "條件",
+    "sentence": "A very generous offer",
+    "sentenceTrans": "非常優厚的條件"
+  },
+  {
+    "id": 410,
+    "word": "official",
+    "trans": "正式的",
+    "sentence": "Official permission",
+    "sentenceTrans": "正式核准"
+  },
+  {
+    "id": 411,
+    "word": "omit",
+    "trans": "省略",
+    "sentence": "Omit all the negative comments",
+    "sentenceTrans": "忽略所有的負面評論"
+  },
+  {
+    "id": 412,
+    "word": "operation",
+    "trans": "業務",
+    "sentence": "Domestic operations",
+    "sentenceTrans": "國內業務"
+  },
+  {
+    "id": 413,
+    "word": "oppose",
+    "trans": "反對",
+    "sentence": "Strongly oppose",
+    "sentenceTrans": "強烈反對"
+  },
+  {
+    "id": 414,
+    "word": "option",
+    "trans": "選擇",
+    "sentence": "Be given the option",
+    "sentenceTrans": "給予選擇"
+  },
+  {
+    "id": 415,
+    "word": "ordinary",
+    "trans": "一般的",
+    "sentence": "Ordinary cookies",
+    "sentenceTrans": "一般的餅乾"
+  },
+  {
+    "id": 416,
+    "word": "organize",
+    "trans": "籌劃",
+    "sentence": "Organize the wedding banquet",
+    "sentenceTrans": "籌辦喜宴"
+  },
+  {
+    "id": 417,
+    "word": "orient",
+    "trans": "導向",
+    "sentence": "Technically-oriented",
+    "sentenceTrans": "技術導向"
+  },
+  {
+    "id": 418,
+    "word": "ornament",
+    "trans": "裝飾品",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 419,
+    "word": "outline",
+    "trans": "勾勒出",
+    "sentence": "Outline her plan",
+    "sentenceTrans": "勾勒出她的計劃"
+  },
+  {
+    "id": 420,
+    "word": "outlook",
+    "trans": "前景",
+    "sentence": "Our outlook is bright",
+    "sentenceTrans": "前景看好"
+  },
+  {
+    "id": 421,
+    "word": "overall",
+    "trans": "整體的",
+    "sentence": "Overall performance",
+    "sentenceTrans": "整體的表現"
+  },
+  {
+    "id": 422,
+    "word": "overcast",
+    "trans": "陰暗的",
+    "sentence": "Overcast skies",
+    "sentenceTrans": "陰天"
+  },
+  {
+    "id": 423,
+    "word": "overcome",
+    "trans": "克服",
+    "sentence": "Overcome many difficulties",
+    "sentenceTrans": "克服許多困難"
+  },
+  {
+    "id": 424,
+    "word": "overdue",
+    "trans": "逾期的",
+    "sentence": "It's two weeks overdue",
+    "sentenceTrans": "逾期兩週"
+  },
+  {
+    "id": 425,
+    "word": "overlook",
+    "trans": "忽視",
+    "sentence": "Didn't overlook any typos",
+    "sentenceTrans": "沒有遺漏任何拼字錯誤"
+  },
+  {
+    "id": 426,
+    "word": "overseas",
+    "trans": "在海外",
+    "sentence": "A trip overseas",
+    "sentenceTrans": "海外旅行"
+  },
+  {
+    "id": 427,
+    "word": "oversee",
+    "trans": "監督",
+    "sentence": "Oversee construction",
+    "sentenceTrans": "監督施工"
+  },
+  {
+    "id": 428,
+    "word": "overview",
+    "trans": "概述",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 429,
+    "word": "overwhelming",
+    "trans": "壓倒性的",
+    "sentence": "Overwhelming majority",
+    "sentenceTrans": "壓倒性的多數"
+  },
+  {
+    "id": 430,
+    "word": "owe",
+    "trans": "虧欠",
+    "sentence": "Owe money to...",
+    "sentenceTrans": "欠...錢"
+  },
+  {
+    "id": 431,
+    "word": "own",
+    "trans": "擁有",
+    "sentence": "Own the company",
+    "sentenceTrans": "擁有這家公司"
+  },
+  {
+    "id": 432,
+    "word": "pack",
+    "trans": "打包",
+    "sentence": "Pack up for the business trip",
+    "sentenceTrans": "打包東西出差"
+  },
+  {
+    "id": 433,
+    "word": "paddle",
+    "trans": "划漿",
+    "sentence": "Paddle in a canoe",
+    "sentenceTrans": "划獨舟"
+  },
+  {
+    "id": 434,
+    "word": "pageant",
+    "trans": "比賽",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 435,
+    "word": "pamphlet",
+    "trans": "小冊子",
+    "sentence": "Giving out pamphlets",
+    "sentenceTrans": "發送小冊子"
+  },
+  {
+    "id": 436,
+    "word": "panel",
+    "trans": "面板",
+    "sentence": "Control panel",
+    "sentenceTrans": "控制面板"
+  },
+  {
+    "id": 437,
+    "word": "parade",
+    "trans": "遊行",
+    "sentence": "Gather to watch the parade",
+    "sentenceTrans": "聚集觀賞遊行"
+  },
+  {
+    "id": 438,
+    "word": "parallel",
+    "trans": "可匹敵的事物",
+    "sentence": "No parallel in this business",
+    "sentenceTrans": "在這行無人能比"
+  },
+  {
+    "id": 439,
+    "word": "paramount",
+    "trans": "首要的",
+    "sentence": "The welfare of workers should be paramount",
+    "sentenceTrans": "員工福利應該是最重要的"
+  },
+  {
+    "id": 440,
+    "word": "participate",
+    "trans": "參與",
+    "sentence": "Participate in a meeting",
+    "sentenceTrans": "參加會議"
+  },
+  {
+    "id": 441,
+    "word": "particular",
+    "trans": "特別的",
+    "sentence": "Particular importance",
+    "sentenceTrans": "特別重要"
+  },
+  {
+    "id": 442,
+    "word": "passerby",
+    "trans": "路人",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 443,
+    "word": "pastime",
+    "trans": "娛樂",
+    "sentence": "Singing is his most favorite pastime",
+    "sentenceTrans": "唱歌是他最喜歡的娛樂"
+  },
+  {
+    "id": 444,
+    "word": "patience",
+    "trans": "耐心",
+    "sentence": "Has no patience with lazy workers",
+    "sentenceTrans": "對於懶惰的員工沒有耐性"
+  },
+  {
+    "id": 445,
+    "word": "pay",
+    "trans": "付錢",
+    "sentence": "Pay in advance",
+    "sentenceTrans": "預先付款"
+  },
+  {
+    "id": 446,
+    "word": "peak",
+    "trans": "最高點",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 447,
+    "word": "peculiar",
+    "trans": "奇怪的",
+    "sentence": "It is peculiar that...",
+    "sentenceTrans": "這很奇怪"
+  },
+  {
+    "id": 448,
+    "word": "penalty",
+    "trans": "罰款",
+    "sentence": "Pay a penalty",
+    "sentenceTrans": "付罰款"
+  },
+  {
+    "id": 449,
+    "word": "pending",
+    "trans": "還沒解決的",
+    "sentence": "Pending issue",
+    "sentenceTrans": "還沒解決的事情"
+  },
+  {
+    "id": 450,
+    "word": "penetrate",
+    "trans": "滲透",
+    "sentence": "Penetrate the European market",
+    "sentenceTrans": "打進歐洲市場"
+  },
+  {
+    "id": 451,
+    "word": "perceive",
+    "trans": "察覺",
+    "sentence": "They failed to perceive where the problem was",
+    "sentenceTrans": "他們沒能看出問題出在哪裡"
+  },
+  {
+    "id": 452,
+    "word": "performance",
+    "trans": "表演",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 453,
+    "word": "period",
+    "trans": "期間",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 454,
+    "word": "permanent",
+    "trans": "永久的",
+    "sentence": "Permanent address",
+    "sentenceTrans": "永久住址"
+  },
+  {
+    "id": 455,
+    "word": "permission",
+    "trans": "許可",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 456,
+    "word": "personalize",
+    "trans": "個人化",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 457,
+    "word": "personnel",
+    "trans": "工作人員",
+    "sentence": "Shortage in experienced personnel",
+    "sentenceTrans": "缺乏有經驗的工作人員"
+  },
+  {
+    "id": 458,
+    "word": "perspective",
+    "trans": "觀點",
+    "sentence": "Different perspectives",
+    "sentenceTrans": "不同的觀點"
+  },
+  {
+    "id": 459,
+    "word": "persuade",
+    "trans": "說服",
+    "sentence": "Persuade her to renew the contract",
+    "sentenceTrans": "說服他續約"
+  },
+  {
+    "id": 460,
+    "word": "petition",
+    "trans": "請願",
+    "sentence": "Petitioning the government to repair the riverbank",
+    "sentenceTrans": "向政府請願修復河提"
+  },
+  {
+    "id": 461,
+    "word": "phase",
+    "trans": "階段",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 462,
+    "word": "phenomenon",
+    "trans": "現象",
+    "sentence": "Is not just a recent phenomenon",
+    "sentenceTrans": "不是最近才發生的事"
+  },
+  {
+    "id": 463,
+    "word": "physical",
+    "trans": "體檢",
+    "sentence": "A complete physical",
+    "sentenceTrans": "徹底的健康檢查"
+  },
+  {
+    "id": 464,
+    "word": "pile",
+    "trans": "堆起來",
+    "sentence": "All the bowls are piled up",
+    "sentenceTrans": "所有的碗都被堆放"
+  },
+  {
+    "id": 465,
+    "word": "pinnacle",
+    "trans": "頂點",
+    "sentence": "Reach his pinnacle of fame",
+    "sentenceTrans": "達到名聲的巔峰"
+  },
+  {
+    "id": 466,
+    "word": "pioneer",
+    "trans": "領先者",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 467,
+    "word": "place",
+    "trans": "放置",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 468,
+    "word": "plain",
+    "trans": "清楚的",
+    "sentence": "It was plain to everyone that...",
+    "sentenceTrans": "每個人都很清楚"
+  },
+  {
+    "id": 469,
+    "word": "platform",
+    "trans": "講台",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 470,
+    "word": "pledge",
+    "trans": "保證",
+    "sentence": "Pledged that its clients' files will remain confidential",
+    "sentenceTrans": "保證所有客戶的檔案將保持機密"
+  },
+  {
+    "id": 471,
+    "word": "plummet",
+    "trans": "下滑",
+    "sentence": "Stock price has plummeted to an all-time low",
+    "sentenceTrans": "股價下滑至空前的新低"
+  },
+  {
+    "id": 472,
+    "word": "plunge",
+    "trans": "暴跌",
+    "sentence": "Stock price has plunged to a new low",
+    "sentenceTrans": "股價暴跌至新低"
+  },
+  {
+    "id": 473,
+    "word": "plus",
+    "trans": "加分",
+    "sentence": "His experience in marketing is a huge plus for this job",
+    "sentenceTrans": "他在行銷方面的經驗為這份工作大大加分"
+  }
+],
+        6: [
+  {
+    "id": 474,
+    "word": "pole",
+    "trans": "桿子",
+    "sentence": "Flag pole",
+    "sentenceTrans": "旗桿"
+  },
+  {
+    "id": 475,
+    "word": "policy",
+    "trans": "政策",
+    "sentence": "Adopt new policy",
+    "sentenceTrans": "採用新政策"
+  },
+  {
+    "id": 476,
+    "word": "poll",
+    "trans": "民調",
+    "sentence": "Conduct a poll",
+    "sentenceTrans": "進行市調"
+  },
+  {
+    "id": 477,
+    "word": "pool",
+    "trans": "匯集",
+    "sentence": "Poll ideas",
+    "sentenceTrans": "集思廣益"
+  },
+  {
+    "id": 478,
+    "word": "portable",
+    "trans": "可攜式的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 479,
+    "word": "portion",
+    "trans": "部分",
+    "sentence": "A small portion of my assets",
+    "sentenceTrans": "資產的一小部分"
+  },
+  {
+    "id": 480,
+    "word": "pose",
+    "trans": "擺姿勢",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 481,
+    "word": "position",
+    "trans": "職位",
+    "sentence": "Apply for a position",
+    "sentenceTrans": "申請工作"
+  },
+  {
+    "id": 482,
+    "word": "positive",
+    "trans": "確定的",
+    "sentence": "Absolutely positve about it",
+    "sentenceTrans": "非常確定"
+  },
+  {
+    "id": 483,
+    "word": "possess",
+    "trans": "持有",
+    "sentence": "Possess plant seeds",
+    "sentenceTrans": "持有植物種子"
+  },
+  {
+    "id": 484,
+    "word": "post",
+    "trans": "張貼",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 485,
+    "word": "potential",
+    "trans": "潛在的",
+    "sentence": "Potential impact",
+    "sentenceTrans": "可能的衝擊"
+  },
+  {
+    "id": 486,
+    "word": "pour",
+    "trans": "下大雨",
+    "sentence": "The rain was pouring down",
+    "sentenceTrans": "雨下得很大"
+  },
+  {
+    "id": 487,
+    "word": "practical",
+    "trans": "實際的",
+    "sentence": "Lack practical experience",
+    "sentenceTrans": "缺乏實際經驗"
+  },
+  {
+    "id": 488,
+    "word": "precedent",
+    "trans": "先例",
+    "sentence": "Successful is without precedent",
+    "sentenceTrans": "史無前例"
+  },
+  {
+    "id": 489,
+    "word": "precious",
+    "trans": "珍貴的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 490,
+    "word": "precipitate",
+    "trans": "加速",
+    "sentence": "Precipitate its downfall",
+    "sentenceTrans": "加速衰落"
+  },
+  {
+    "id": 491,
+    "word": "precise",
+    "trans": "精確的",
+    "sentence": "Precise specifications",
+    "sentenceTrans": "精確的規格"
+  },
+  {
+    "id": 492,
+    "word": "predict",
+    "trans": "預測",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 493,
+    "word": "preference",
+    "trans": "優先權",
+    "sentence": "Give preference to bilingual applicants",
+    "sentenceTrans": "把優先權給會講兩種語言的申請人"
+  },
+  {
+    "id": 494,
+    "word": "prejudice",
+    "trans": "偏見",
+    "sentence": "Have a prejudice against foreign workers",
+    "sentenceTrans": "對外籍勞工有偏見"
+  },
+  {
+    "id": 495,
+    "word": "premature",
+    "trans": "過早的",
+    "sentence": "A bit premature to ask",
+    "sentenceTrans": "過早要求"
+  },
+  {
+    "id": 496,
+    "word": "premiere",
+    "trans": "首映",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 497,
+    "word": "premium",
+    "trans": "保險費",
+    "sentence": "Employment insurance premium",
+    "sentenceTrans": "勞工保險費"
+  },
+  {
+    "id": 498,
+    "word": "preoccupied",
+    "trans": "心事重重的",
+    "sentence": "He is preoccupied with",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 499,
+    "word": "prescribe",
+    "trans": "開藥",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 500,
+    "word": "prestige",
+    "trans": "威信",
+    "sentence": "The invention gained him international prestige",
+    "sentenceTrans": "贏得國際間聲望"
+  },
+  {
+    "id": 501,
+    "word": "presume",
+    "trans": "猜想",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 502,
+    "word": "pretend",
+    "trans": "假裝",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 503,
+    "word": "prevalent",
+    "trans": "普遍的",
+    "sentence": "Become prevalent",
+    "sentenceTrans": "盛行"
+  },
+  {
+    "id": 504,
+    "word": "prevent",
+    "trans": "阻止",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 505,
+    "word": "previous",
+    "trans": "先前的",
+    "sentence": "Previous job",
+    "sentenceTrans": "前一份工作"
+  },
+  {
+    "id": 506,
+    "word": "price",
+    "trans": "定價",
+    "sentence": "Reasonably priced",
+    "sentenceTrans": "價格公道"
+  },
+  {
+    "id": 507,
+    "word": "prime",
+    "trans": "首要的",
+    "sentence": "Prime concern",
+    "sentenceTrans": "首要的顧慮"
+  },
+  {
+    "id": 508,
+    "word": "principle",
+    "trans": "原則",
+    "sentence": "Goes against principles",
+    "sentenceTrans": "違反原則"
+  },
+  {
+    "id": 509,
+    "word": "priority",
+    "trans": "優先",
+    "sentence": "Top priority",
+    "sentenceTrans": "第一優先"
+  },
+  {
+    "id": 510,
+    "word": "private",
+    "trans": "私人的",
+    "sentence": "Private property",
+    "sentenceTrans": "私人財產"
+  },
+  {
+    "id": 511,
+    "word": "privilege",
+    "trans": "特權",
+    "sentence": "A member's only privilege",
+    "sentenceTrans": "會員的特權"
+  },
+  {
+    "id": 512,
+    "word": "prize",
+    "trans": "獎品",
+    "sentence": "Win first prize",
+    "sentenceTrans": "得到第一名"
+  },
+  {
+    "id": 513,
+    "word": "probability",
+    "trans": "可能性",
+    "sentence": "Strong probability",
+    "sentenceTrans": "可能性很大"
+  },
+  {
+    "id": 514,
+    "word": "proceed",
+    "trans": "繼續進行",
+    "sentence": "We'll proceed with the discussion",
+    "sentenceTrans": "繼續進行討論"
+  },
+  {
+    "id": 515,
+    "word": "process",
+    "trans": "處理",
+    "sentence": "Your application is still being processed",
+    "sentenceTrans": "處理中"
+  },
+  {
+    "id": 516,
+    "word": "produce",
+    "trans": "農產品",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 517,
+    "word": "professional",
+    "trans": "專業的",
+    "sentence": "Conducted by professional instructors",
+    "sentenceTrans": "由專業的老師指導"
+  },
+  {
+    "id": 518,
+    "word": "profile",
+    "trans": "簡介",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 519,
+    "word": "profit",
+    "trans": "利潤",
+    "sentence": "Net profit",
+    "sentenceTrans": "淨利"
+  },
+  {
+    "id": 520,
+    "word": "profound",
+    "trans": "深遠的",
+    "sentence": "A profound impact on",
+    "sentenceTrans": "對...有深遠的影響"
+  },
+  {
+    "id": 521,
+    "word": "progress",
+    "trans": "進行",
+    "sentence": "While the meeting is in progress",
+    "sentenceTrans": "當會議進行時"
+  },
+  {
+    "id": 522,
+    "word": "prohibit",
+    "trans": "禁止",
+    "sentence": "Smoking is prohibited",
+    "sentenceTrans": "禁煙"
+  },
+  {
+    "id": 523,
+    "word": "project",
+    "trans": "預計",
+    "sentence": "Gross profits is projected to reach",
+    "sentenceTrans": "毛利預計達到"
+  },
+  {
+    "id": 524,
+    "word": "promise",
+    "trans": "保證",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 525,
+    "word": "promote",
+    "trans": "拔擢",
+    "sentence": "Be promoted to the position",
+    "sentenceTrans": "升遷"
+  },
+  {
+    "id": 526,
+    "word": "prompt",
+    "trans": "即時的",
+    "sentence": "Prompt payment",
+    "sentenceTrans": "及時付款"
+  },
+  {
+    "id": 527,
+    "word": "proofread",
+    "trans": "校閱",
+    "sentence": "Proofread the status report",
+    "sentenceTrans": "校閲進度報告"
+  },
+  {
+    "id": 528,
+    "word": "proper",
+    "trans": "適當的",
+    "sentence": "Proper treatment",
+    "sentenceTrans": "適當的治療"
+  },
+  {
+    "id": 529,
+    "word": "property",
+    "trans": "房地產",
+    "sentence": "The property downtown",
+    "sentenceTrans": "市區的房地產"
+  },
+  {
+    "id": 530,
+    "word": "proportion",
+    "trans": "比例",
+    "sentence": "The proportion of Asian works",
+    "sentenceTrans": "亞裔員工的比例"
+  },
+  {
+    "id": 531,
+    "word": "propose",
+    "trans": "提出",
+    "sentence": "Propose a plan to",
+    "sentenceTrans": "提出一項計劃"
+  },
+  {
+    "id": 532,
+    "word": "proprietor",
+    "trans": "所有人",
+    "sentence": "The proprietor of the restaurant",
+    "sentenceTrans": "餐廳的所有人(老闆)"
+  },
+  {
+    "id": 533,
+    "word": "prosecute",
+    "trans": "起訴",
+    "sentence": "He was prosecuted for embezzling",
+    "sentenceTrans": "盜用公款被起訴"
+  },
+  {
+    "id": 534,
+    "word": "prospect",
+    "trans": "前途",
+    "sentence": "Find a job with excellent prospects",
+    "sentenceTrans": "前途看好的工作"
+  },
+  {
+    "id": 535,
+    "word": "protest",
+    "trans": "抗議",
+    "sentence": "Protest against his decision",
+    "sentenceTrans": "對他的決定提出抗議"
+  },
+  {
+    "id": 536,
+    "word": "proud",
+    "trans": "引以為傲的",
+    "sentence": "Be proud of his achievement",
+    "sentenceTrans": "對他的成就感到驕傲"
+  },
+  {
+    "id": 537,
+    "word": "provide",
+    "trans": "提供",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 538,
+    "word": "provided",
+    "trans": "如果",
+    "sentence": "Provided they cut wages",
+    "sentenceTrans": "如果他們調降薪資"
+  },
+  {
+    "id": 539,
+    "word": "provisional",
+    "trans": "臨時的",
+    "sentence": "Provisonal parking pass",
+    "sentenceTrans": "臨時停車證"
+  },
+  {
+    "id": 540,
+    "word": "prudent",
+    "trans": "謹慎的",
+    "sentence": "It would be more prudent to",
+    "sentenceTrans": "比較謹慎的做法"
+  },
+  {
+    "id": 541,
+    "word": "prune",
+    "trans": "修剪",
+    "sentence": "Prune roses",
+    "sentenceTrans": "修剪玫瑰"
+  },
+  {
+    "id": 542,
+    "word": "public",
+    "trans": "大眾",
+    "sentence": "Public transport",
+    "sentenceTrans": "大眾運輸工具"
+  },
+  {
+    "id": 543,
+    "word": "publicity",
+    "trans": "宣傳",
+    "sentence": "Publicity campaign",
+    "sentenceTrans": "宣傳活動"
+  },
+  {
+    "id": 544,
+    "word": "publish",
+    "trans": "出版",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 545,
+    "word": "punch",
+    "trans": "打下印記",
+    "sentence": "Punch in at 9 a.m.",
+    "sentenceTrans": "早上9點打卡"
+  },
+  {
+    "id": 546,
+    "word": "punctual",
+    "trans": "準時的",
+    "sentence": "He is always very punctual",
+    "sentenceTrans": "非常準時"
+  },
+  {
+    "id": 547,
+    "word": "punish",
+    "trans": "處罰",
+    "sentence": "Harshly punish",
+    "sentenceTrans": "嚴厲的懲罰"
+  },
+  {
+    "id": 548,
+    "word": "purchase",
+    "trans": "購買",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 549,
+    "word": "purpose",
+    "trans": "目的",
+    "sentence": "Traveling in Paris for business purposes",
+    "sentenceTrans": "公務上的目的"
+  },
+  {
+    "id": 550,
+    "word": "pursuit",
+    "trans": "追求",
+    "sentence": "In Pursuit of excellence",
+    "sentenceTrans": "追求卓越的過程"
+  },
+  {
+    "id": 551,
+    "word": "qualification",
+    "trans": "資格",
+    "sentence": "Qualifications to be successor",
+    "sentenceTrans": "接班人的資格"
+  },
+  {
+    "id": 552,
+    "word": "quantity",
+    "trans": "數量",
+    "sentence": "Produce the models in large quantities",
+    "sentenceTrans": "大量生產"
+  },
+  {
+    "id": 553,
+    "word": "quarter",
+    "trans": "一季",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 554,
+    "word": "question",
+    "trans": "質疑",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 555,
+    "word": "quota",
+    "trans": "額度",
+    "sentence": "Fail to fulfill its production quota",
+    "sentenceTrans": "沒有達到生產額度"
+  },
+  {
+    "id": 556,
+    "word": "quote",
+    "trans": "引述",
+    "sentence": "The article quote her comments",
+    "sentenceTrans": "引述她的評論"
+  }
+],
+        7: [
+ {
+    "id": 557,
+    "word": "race",
+    "trans": "加速",
+    "sentence": "Race to finish a project",
+    "sentenceTrans": "加速完成"
+  },
+  {
+    "id": 558,
+    "word": "radical",
+    "trans": "徹底的",
+    "sentence": "Radical change",
+    "sentenceTrans": "徹底的改變"
+  },
+  {
+    "id": 559,
+    "word": "raffle",
+    "trans": "彩券",
+    "sentence": "Raffle tickets",
+    "sentenceTrans": "彩券"
+  },
+  {
+    "id": 560,
+    "word": "raise",
+    "trans": "加薪",
+    "sentence": "Receive a raise",
+    "sentenceTrans": "加薪"
+  },
+  {
+    "id": 561,
+    "word": "rally",
+    "trans": "集合",
+    "sentence": "Rally in the plaza",
+    "sentenceTrans": "在廣場聚集"
+  },
+  {
+    "id": 562,
+    "word": "randomly",
+    "trans": "隨便的",
+    "sentence": "Pile up randomly",
+    "sentenceTrans": "隨便堆放"
+  },
+  {
+    "id": 563,
+    "word": "rapidly",
+    "trans": "快速地",
+    "sentence": "Grown rapidly",
+    "sentenceTrans": "成長很快"
+  },
+  {
+    "id": 564,
+    "word": "rate",
+    "trans": "比率",
+    "sentence": "Interest rate",
+    "sentenceTrans": "利率"
+  },
+  {
+    "id": 565,
+    "word": "rational",
+    "trans": "合理的",
+    "sentence": "Rational decision",
+    "sentenceTrans": "合理的決定"
+  },
+  {
+    "id": 566,
+    "word": "raw",
+    "trans": "未加工的",
+    "sentence": "Import the raw materials",
+    "sentenceTrans": "進口原料"
+  },
+  {
+    "id": 567,
+    "word": "reach",
+    "trans": "抵達",
+    "sentence": "Reach Taipei",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 568,
+    "word": "reaction",
+    "trans": "反應",
+    "sentence": "Call a press conference in reaction to",
+    "sentenceTrans": "召開記者會來回應"
+  },
+  {
+    "id": 569,
+    "word": "realize",
+    "trans": "明白",
+    "sentence": "Realize the effort I've been putting forth",
+    "sentenceTrans": "明白所做的努力"
+  },
+  {
+    "id": 570,
+    "word": "reap",
+    "trans": "收割",
+    "sentence": "Reap the crops",
+    "sentenceTrans": "收割農作物"
+  },
+  {
+    "id": 571,
+    "word": "reasonably",
+    "trans": "合理地",
+    "sentence": "Reasonably priced",
+    "sentenceTrans": "價格公道"
+  },
+  {
+    "id": 572,
+    "word": "reassure",
+    "trans": "令人安心",
+    "sentence": "Feel reasured after...",
+    "sentenceTrans": ".....在之後覺得安心"
+  },
+  {
+    "id": 573,
+    "word": "recall",
+    "trans": "回收",
+    "sentence": "Recall all of the unsafe baby strollers",
+    "sentenceTrans": "召回產品"
+  },
+  {
+    "id": 574,
+    "word": "receipt",
+    "trans": "收據",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 575,
+    "word": "reception",
+    "trans": "接待",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 576,
+    "word": "recess",
+    "trans": "休息",
+    "sentence": "Take thirty-minute recess",
+    "sentenceTrans": "休息30分鐘"
+  },
+  {
+    "id": 577,
+    "word": "recipe",
+    "trans": "配方",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 578,
+    "word": "reciprocal",
+    "trans": "互惠的",
+    "sentence": "Sign a reciprocal trade agreement",
+    "sentenceTrans": "簽訂互惠商貿協定"
+  },
+  {
+    "id": 579,
+    "word": "reckon",
+    "trans": "估計",
+    "sentence": "Reckon our assets",
+    "sentenceTrans": "估計資產"
+  },
+  {
+    "id": 580,
+    "word": "recognize",
+    "trans": "認可",
+    "sentence": "Be widely recognized",
+    "sentenceTrans": "大家所公認"
+  },
+  {
+    "id": 581,
+    "word": "recommend",
+    "trans": "建議",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 582,
+    "word": "recover",
+    "trans": "取回",
+    "sentence": "Recover our stolen money",
+    "sentenceTrans": "取回被偷的錢"
+  },
+  {
+    "id": 583,
+    "word": "recruit",
+    "trans": "招募",
+    "sentence": "Recruit well-trained volunteers",
+    "sentenceTrans": "招募訓練有素的志工"
+  },
+  {
+    "id": 584,
+    "word": "redeem",
+    "trans": "贖回",
+    "sentence": "Redeem his car",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 585,
+    "word": "reduce",
+    "trans": "減少",
+    "sentence": "Reduce occupational hazards",
+    "sentenceTrans": "減少職業傷害"
+  },
+  {
+    "id": 586,
+    "word": "redundant",
+    "trans": "多餘的",
+    "sentence": "Store redundant parts in",
+    "sentenceTrans": "存放多餘的零件在"
+  },
+  {
+    "id": 587,
+    "word": "refer",
+    "trans": "提及",
+    "sentence": "She was referring to",
+    "sentenceTrans": "她說的是...."
+  },
+  {
+    "id": 588,
+    "word": "refinance",
+    "trans": "轉貸",
+    "sentence": "Refinance the house",
+    "sentenceTrans": "將房子轉貸"
+  },
+  {
+    "id": 589,
+    "word": "refine",
+    "trans": "提煉",
+    "sentence": "Oil must be refined",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 590,
+    "word": "reflection",
+    "trans": "倒影",
+    "sentence": "The reflection of the mountain on the lake",
+    "sentenceTrans": "湖面上的倒影"
+  },
+  {
+    "id": 591,
+    "word": "reform",
+    "trans": "改革",
+    "sentence": "Reform the merit system",
+    "sentenceTrans": "改革績效制度"
+  },
+  {
+    "id": 592,
+    "word": "refund",
+    "trans": "退款",
+    "sentence": "Demand a full refund",
+    "sentenceTrans": "要求全額退款"
+  },
+  {
+    "id": 593,
+    "word": "refuse",
+    "trans": "拒絕",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 594,
+    "word": "regional",
+    "trans": "地區性的",
+    "sentence": "Regional differences",
+    "sentenceTrans": "地區性差異"
+  },
+  {
+    "id": 595,
+    "word": "register",
+    "trans": "註冊",
+    "sentence": "Register the product online to get the extended guarantee",
+    "sentenceTrans": "線上註冊以延長保固"
+  },
+  {
+    "id": 596,
+    "word": "repret",
+    "trans": "後悔",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 597,
+    "word": "regularly",
+    "trans": "定期地",
+    "sentence": "Conduct workshops regularly",
+    "sentenceTrans": "定期舉辦"
+  },
+  {
+    "id": 598,
+    "word": "regulation",
+    "trans": "規定",
+    "sentence": "Ignore the safety regulations",
+    "sentenceTrans": "忽視安全規定"
+  },
+  {
+    "id": 599,
+    "word": "rehearse",
+    "trans": "排練",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 600,
+    "word": "reinforce",
+    "trans": "加強",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 601,
+    "word": "release",
+    "trans": "發布",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 602,
+    "word": "relevant",
+    "trans": "相關的",
+    "sentence": "Relevant experience",
+    "sentenceTrans": "相關經驗"
+  },
+  {
+    "id": 603,
+    "word": "relieved",
+    "trans": "放心的",
+    "sentence": "She would be relieved to know that",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 604,
+    "word": "relocate",
+    "trans": "搬遷",
+    "sentence": "Relocate headquarters to",
+    "sentenceTrans": "搬遷總部到"
+  },
+  {
+    "id": 605,
+    "word": "remedy",
+    "trans": "補救",
+    "sentence": "Provide us with a remedy for our losses",
+    "sentenceTrans": "提供損失的補救方法"
+  },
+  {
+    "id": 606,
+    "word": "remind",
+    "trans": "提醒",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 607,
+    "word": "remittance",
+    "trans": "匯款",
+    "sentence": "Confirm us of the remittance",
+    "sentenceTrans": "確認匯款"
+  },
+  {
+    "id": 608,
+    "word": "remote",
+    "trans": "遙遠的",
+    "sentence": "Locate in a remote village",
+    "sentenceTrans": "位於遙遠的村莊"
+  },
+  {
+    "id": 609,
+    "word": "remove",
+    "trans": "免職",
+    "sentence": "Be removed form his position",
+    "sentenceTrans": "被免職"
+  },
+  {
+    "id": 610,
+    "word": "renew",
+    "trans": "繼續",
+    "sentence": "Renew the lease",
+    "sentenceTrans": "續約"
+  },
+  {
+    "id": 611,
+    "word": "renovate",
+    "trans": "翻修",
+    "sentence": "The hotel is renovating its lobby",
+    "sentenceTrans": "翻修大廳"
+  },
+  {
+    "id": 612,
+    "word": "rent",
+    "trans": "租借",
+    "sentence": "Rent a car",
+    "sentenceTrans": "租車"
+  },
+  {
+    "id": 613,
+    "word": "repair",
+    "trans": "修理",
+    "sentence": "Repair shop",
+    "sentenceTrans": "修車廠"
+  },
+  {
+    "id": 614,
+    "word": "reply",
+    "trans": "回覆",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 615,
+    "word": "represent",
+    "trans": "代表",
+    "sentence": "Represnet us",
+    "sentenceTrans": "代表我們"
+  },
+  {
+    "id": 616,
+    "word": "reputation",
+    "trans": "名聲",
+    "sentence": "Excellent reputation",
+    "sentenceTrans": "好的名聲"
+  },
+  {
+    "id": 617,
+    "word": "request",
+    "trans": "要求",
+    "sentence": "Be requested to",
+    "sentenceTrans": "被要求"
+  },
+  {
+    "id": 618,
+    "word": "requirement",
+    "trans": "需求",
+    "sentence": "Maintenance requirements",
+    "sentenceTrans": "維修需求"
+  },
+  {
+    "id": 619,
+    "word": "rescue",
+    "trans": "拯救",
+    "sentence": "He rescue our company",
+    "sentenceTrans": "拯救公司"
+  },
+  {
+    "id": 620,
+    "word": "research",
+    "trans": "研究",
+    "sentence": "Conduct research on",
+    "sentenceTrans": "進行研究"
+  },
+  {
+    "id": 621,
+    "word": "reservation",
+    "trans": "訂位",
+    "sentence": "Confirm our reservation",
+    "sentenceTrans": "確認定位"
+  },
+  {
+    "id": 622,
+    "word": "reshuffle",
+    "trans": "改組",
+    "sentence": "Reshuffle the congress",
+    "sentenceTrans": "將國會改組"
+  },
+  {
+    "id": 623,
+    "word": "resident",
+    "trans": "居民",
+    "sentence": "Local residents",
+    "sentenceTrans": "當地居民"
+  },
+  {
+    "id": 624,
+    "word": "resign",
+    "trans": "辭職",
+    "sentence": "He resigned from the board",
+    "sentenceTrans": "辭掉董事會職務"
+  },
+  {
+    "id": 625,
+    "word": "resist",
+    "trans": "抗拒",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 626,
+    "word": "resolve",
+    "trans": "解決",
+    "sentence": "Come up with a way to resolve the labor dispute",
+    "sentenceTrans": "想出辦法來解決勞資糾紛"
+  },
+  {
+    "id": 627,
+    "word": "resource",
+    "trans": "資源",
+    "sentence": "Mineral resource",
+    "sentenceTrans": "礦產資源"
+  },
+  {
+    "id": 628,
+    "word": "respond",
+    "trans": "回應",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 629,
+    "word": "respondent",
+    "trans": "受訪者",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 630,
+    "word": "responsible",
+    "trans": "負責的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 631,
+    "word": "restore",
+    "trans": "恢復",
+    "sentence": "Restroe our competitiveness",
+    "sentenceTrans": "恢復競爭力"
+  },
+  {
+    "id": 632,
+    "word": "restrict",
+    "trans": "限制",
+    "sentence": "Restrict the number of foreign workers",
+    "sentenceTrans": "限制外籍勞工的數量"
+  },
+  {
+    "id": 633,
+    "word": "result",
+    "trans": "結果",
+    "sentence": "Miss their flight as a result of heavy traffic",
+    "sentenceTrans": "因為塞車錯過班機"
+  },
+  {
+    "id": 634,
+    "word": "resume",
+    "trans": "重新開始",
+    "sentence": "Resume his teaching job",
+    "sentenceTrans": "重返教職工作"
+  },
+  {
+    "id": 635,
+    "word": "resume",
+    "trans": "履歷表",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 636,
+    "word": "retail",
+    "trans": "零售",
+    "sentence": "Retail store",
+    "sentenceTrans": "零售店"
+  },
+  {
+    "id": 637,
+    "word": "retain",
+    "trans": "保留",
+    "sentence": "Retain its 18th-century elegance",
+    "sentenceTrans": "保留18世紀的高雅"
+  },
+  {
+    "id": 638,
+    "word": "retire",
+    "trans": "退休",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 639,
+    "word": "retrieve",
+    "trans": "取回",
+    "sentence": "Retrieve his briefcase",
+    "sentenceTrans": "取回遺失的公事包"
+  },
+  {
+    "id": 640,
+    "word": "reveal",
+    "trans": "透露",
+    "sentence": "Not authorized to reveal the winnners",
+    "sentenceTrans": "沒有權利透露得主"
+  },
+  {
+    "id": 641,
+    "word": "reverse",
+    "trans": "徹底改變",
+    "sentence": "Won't reverse its decision",
+    "sentenceTrans": "不會改變決定"
+  },
+  {
+    "id": 642,
+    "word": "review",
+    "trans": "考核",
+    "sentence": "Give performance review",
+    "sentenceTrans": "考核工作表現"
+  },
+  {
+    "id": 643,
+    "word": "revision",
+    "trans": "修正",
+    "sentence": "Made a number of revisions to",
+    "sentenceTrans": "做了許多修改"
+  },
+  {
+    "id": 644,
+    "word": "revive",
+    "trans": "振興",
+    "sentence": "Revive the local economy",
+    "sentenceTrans": "振興地方經濟"
+  },
+  {
+    "id": 645,
+    "word": "rewarding",
+    "trans": "有報酬的",
+    "sentence": "Rewarding year",
+    "sentenceTrans": "相當賺錢的一年"
+  },
+  {
+    "id": 646,
+    "word": "right",
+    "trans": "權利",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 647,
+    "word": "rinse",
+    "trans": "洗滌",
+    "sentence": "Rinse the vegetables",
+    "sentenceTrans": "洗菜"
+  },
+  {
+    "id": 648,
+    "word": "ripe",
+    "trans": "成熟的",
+    "sentence": "Ripe apple",
+    "sentenceTrans": "熟蘋果"
+  },
+  {
+    "id": 649,
+    "word": "rise",
+    "trans": "上漲",
+    "sentence": "Sharp rise in power consumption",
+    "sentenceTrans": "用電激增"
+  },
+  {
+    "id": 650,
+    "word": "risk",
+    "trans": "冒險",
+    "sentence": "Risk a big fine",
+    "sentenceTrans": "冒著高額罰金的風險"
+  },
+  {
+    "id": 651,
+    "word": "rotate",
+    "trans": "輪流",
+    "sentence": "The host rotates annually",
+    "sentenceTrans": "每年輪流"
+  },
+  {
+    "id": 652,
+    "word": "rough",
+    "trans": "粗暴的",
+    "sentence": "Damage caused by rough handling",
+    "sentenceTrans": "使用不當造成的損壞"
+  },
+  {
+    "id": 653,
+    "word": "route",
+    "trans": "路線",
+    "sentence": "Take a different route",
+    "sentenceTrans": "改走其它路線"
+  },
+  {
+    "id": 654,
+    "word": "routine",
+    "trans": "例行的",
+    "sentence": "Conduct a routine examination",
+    "sentenceTrans": "進行例行檢查"
+  },
+  {
+    "id": 655,
+    "word": "rule",
+    "trans": "判定",
+    "sentence": "The court has ruled it unlawful",
+    "sentenceTrans": "法庭判定它不合法"
+  },
+  {
+    "id": 656,
+    "word": "rush",
+    "trans": "趕緊處理",
+    "sentence": "Rush her order",
+    "sentenceTrans": "趕緊處理她的訂單"
+  }
+],
+        8: [
+  {
+    "id": 657,
+    "word": "sabotage",
+    "trans": "破壞",
+    "sentence": "Sabotage the campaign",
+    "sentenceTrans": "破壞活動"
+  },
+  {
+    "id": 658,
+    "word": "safety",
+    "trans": "安全",
+    "sentence": "Safety checks",
+    "sentenceTrans": "安全檢查"
+  },
+  {
+    "id": 659,
+    "word": "sale",
+    "trans": "拍賣",
+    "sentence": "Clearance sale",
+    "sentenceTrans": "清倉拍賣"
+  },
+  {
+    "id": 660,
+    "word": "salute",
+    "trans": "致敬",
+    "sentence": "Give our salute to retiring manager",
+    "sentenceTrans": "向即將退休的經理致敬"
+  },
+  {
+    "id": 661,
+    "word": "sample",
+    "trans": "品嚐",
+    "sentence": "Sample the wine",
+    "sentenceTrans": "品酒"
+  },
+  {
+    "id": 662,
+    "word": "sanction",
+    "trans": "許可",
+    "sentence": "Without the sanction",
+    "sentenceTrans": "沒有經過許可"
+  },
+  {
+    "id": 663,
+    "word": "sand",
+    "trans": "用砂紙磨",
+    "sentence": "Sand a shelf board",
+    "sentenceTrans": "用砂紙磨層板"
+  },
+  {
+    "id": 664,
+    "word": "sanitary",
+    "trans": "衛生的",
+    "sentence": "It's sanitary to wear gloves",
+    "sentenceTrans": "戴手套是衛生的"
+  },
+  {
+    "id": 665,
+    "word": "satisfactory",
+    "trans": "令人滿意的",
+    "sentence": "His performance is satisfactory",
+    "sentenceTrans": "表現令人滿意"
+  },
+  {
+    "id": 666,
+    "word": "scan",
+    "trans": "瀏覽",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 667,
+    "word": "scarcely",
+    "trans": "幾乎沒有",
+    "sentence": "I scarcely see him work overtime",
+    "sentenceTrans": "幾乎沒看過他加班"
+  },
+  {
+    "id": 668,
+    "word": "scenery",
+    "trans": "風景",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 669,
+    "word": "schedule",
+    "trans": "預定",
+    "sentence": "Be scheduled to arrive at 10 0'clock",
+    "sentenceTrans": "預定在10點抵達"
+  },
+  {
+    "id": 670,
+    "word": "scheme",
+    "trans": "方案",
+    "sentence": "Work out a scheme",
+    "sentenceTrans": "想出方案"
+  },
+  {
+    "id": 671,
+    "word": "scholarship",
+    "trans": "獎學金",
+    "sentence": "Won a scholarship",
+    "sentenceTrans": "拿到獎學金"
+  },
+  {
+    "id": 672,
+    "word": "scope",
+    "trans": "範圍",
+    "sentence": "Be beyond our scope of study",
+    "sentenceTrans": "不在我們的研究範圍"
+  },
+  {
+    "id": 673,
+    "word": "scrape",
+    "trans": "刮掉",
+    "sentence": "Scrape the mud off of his boots",
+    "sentenceTrans": "把靴子上的泥巴刮掉"
+  },
+  {
+    "id": 674,
+    "word": "screen",
+    "trans": "過濾",
+    "sentence": "Screen the guests of the party",
+    "sentenceTrans": "過濾來賓"
+  },
+  {
+    "id": 675,
+    "word": "script",
+    "trans": "稿子",
+    "sentence": "Proofread the script of my speech",
+    "sentenceTrans": "校閲演講稿"
+  },
+  {
+    "id": 676,
+    "word": "scrub",
+    "trans": "刷洗",
+    "sentence": "Scrub the floor",
+    "sentenceTrans": "刷洗地板"
+  },
+  {
+    "id": 677,
+    "word": "scrutinize",
+    "trans": "仔細檢查",
+    "sentence": "Scrutinize the results of the experiment",
+    "sentenceTrans": "仔細檢查實驗結果"
+  },
+  {
+    "id": 678,
+    "word": "sculpture",
+    "trans": "雕像",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 679,
+    "word": "seal",
+    "trans": "密封",
+    "sentence": "Seal the cardboard box with tape",
+    "sentenceTrans": "用膠帶把紙箱封起來"
+  },
+  {
+    "id": 680,
+    "word": "seam",
+    "trans": "接縫處",
+    "sentence": "The shirt ripped along a seam",
+    "sentenceTrans": "從接縫處裂開"
+  },
+  {
+    "id": 681,
+    "word": "season",
+    "trans": "季節",
+    "sentence": "High season for tourism",
+    "sentenceTrans": "旅遊業旺季"
+  },
+  {
+    "id": 682,
+    "word": "seat",
+    "trans": "座位",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 683,
+    "word": "secondary",
+    "trans": "次要的",
+    "sentence": "All other concerns are secondary to ...",
+    "sentenceTrans": "跟...比起來,其它顧慮都是次要的"
+  },
+  {
+    "id": 684,
+    "word": "secure",
+    "trans": "牢固的",
+    "sentence": "Make sure all signboards are secure",
+    "sentenceTrans": "確認所有招牌都是牢固的"
+  },
+  {
+    "id": 685,
+    "word": "seemingly",
+    "trans": "表面看來",
+    "sentence": "Seemingly unrelated evidence",
+    "sentenceTrans": "表面看起來不相關的證據"
+  },
+  {
+    "id": 686,
+    "word": "segment",
+    "trans": "部分",
+    "sentence": "In terms of market segments",
+    "sentenceTrans": "以市場區隔的觀點"
+  },
+  {
+    "id": 687,
+    "word": "seize",
+    "trans": "抓住",
+    "sentence": "Seize the boy's arm",
+    "sentenceTrans": "抓住手臂"
+  },
+  {
+    "id": 688,
+    "word": "select",
+    "trans": "選擇",
+    "sentence": "Take a vote to select the committee chairman",
+    "sentenceTrans": "投票選出委員會的主席"
+  },
+  {
+    "id": 689,
+    "word": "seniority",
+    "trans": "年資",
+    "sentence": "Give raises based on seniority",
+    "sentenceTrans": "根據年資來加薪"
+  },
+  {
+    "id": 690,
+    "word": "sensible",
+    "trans": "合理的",
+    "sentence": "It's sensible to ask for",
+    "sentenceTrans": "是合理的"
+  },
+  {
+    "id": 691,
+    "word": "separate",
+    "trans": "分開的",
+    "sentence": "On separate floors",
+    "sentenceTrans": "在不同樓層"
+  },
+  {
+    "id": 692,
+    "word": "sequence",
+    "trans": "連續的",
+    "sentence": "A sequence of good investments",
+    "sentenceTrans": "一連串的正確投資"
+  },
+  {
+    "id": 693,
+    "word": "service",
+    "trans": "服務",
+    "sentence": "After-sale service",
+    "sentenceTrans": "售後服務"
+  },
+  {
+    "id": 694,
+    "word": "session",
+    "trans": "期間",
+    "sentence": "A question-and-answer session",
+    "sentenceTrans": "問答時間"
+  },
+  {
+    "id": 695,
+    "word": "settlement",
+    "trans": "解決",
+    "sentence": "Work out a pay settlement",
+    "sentenceTrans": "想出薪資解決方案"
+  },
+  {
+    "id": 696,
+    "word": "severance",
+    "trans": "中斷",
+    "sentence": "Severance pay",
+    "sentenceTrans": "遣散費"
+  },
+  {
+    "id": 697,
+    "word": "severe",
+    "trans": "嚴重的",
+    "sentence": "A severe setback",
+    "sentenceTrans": "嚴重的挫敗"
+  },
+  {
+    "id": 698,
+    "word": "sew",
+    "trans": "縫合",
+    "sentence": "Sewing machine",
+    "sentenceTrans": "縫紉機"
+  },
+  {
+    "id": 699,
+    "word": "shadow",
+    "trans": "影子",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 700,
+    "word": "shallow",
+    "trans": "膚淺的",
+    "sentence": "Shallow thoughts",
+    "sentenceTrans": "膚淺的想法"
+  },
+  {
+    "id": 701,
+    "word": "shame",
+    "trans": "丟臉",
+    "sentence": "There's no shame in asking for help",
+    "sentenceTrans": "沒什麼好丟臉的"
+  },
+  {
+    "id": 702,
+    "word": "share",
+    "trans": "市佔率",
+    "sentence": "Market share",
+    "sentenceTrans": "市佔率"
+  },
+  {
+    "id": 703,
+    "word": "shelf",
+    "trans": "架子",
+    "sentence": "Remove all expired food from the shelves",
+    "sentenceTrans": "把過期的食品都從架子上移走"
+  },
+  {
+    "id": 704,
+    "word": "shelter",
+    "trans": "避難所",
+    "sentence": "Emergency shelter",
+    "sentenceTrans": "緊急避難所"
+  },
+  {
+    "id": 705,
+    "word": "shift",
+    "trans": "值班",
+    "sentence": "Graveyard shift",
+    "sentenceTrans": "大夜班"
+  },
+  {
+    "id": 706,
+    "word": "ship",
+    "trans": "送貨",
+    "sentence": "Ship goods via UPS standard service",
+    "sentenceTrans": "利用UPS的服務送貨"
+  },
+  {
+    "id": 707,
+    "word": "shock",
+    "trans": "震驚",
+    "sentence": "Be shocked at...",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 708,
+    "word": "shop",
+    "trans": "購買",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 709,
+    "word": "shorten",
+    "trans": "縮短",
+    "sentence": "Shorten vacation by one day",
+    "sentenceTrans": "縮短一天的假期"
+  },
+  {
+    "id": 710,
+    "word": "shortfall",
+    "trans": "短缺",
+    "sentence": "A shortfall of two million dollars",
+    "sentenceTrans": "兩百萬美元的短缺"
+  },
+  {
+    "id": 711,
+    "word": "shorthand",
+    "trans": "速記",
+    "sentence": "Take notes in shorthand",
+    "sentenceTrans": "用速記的方式做筆記"
+  },
+  {
+    "id": 712,
+    "word": "shortsighted",
+    "trans": "短視的",
+    "sentence": "It's very shortsighted...",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 713,
+    "word": "shred",
+    "trans": "弄碎",
+    "sentence": "Shredding machine",
+    "sentenceTrans": "碎紙機"
+  },
+  {
+    "id": 714,
+    "word": "shrink",
+    "trans": "萎縮",
+    "sentence": "Shrinking market share",
+    "sentenceTrans": "萎縮的市佔率"
+  },
+  {
+    "id": 715,
+    "word": "shutdown",
+    "trans": "關閉",
+    "sentence": "The unannounced shutdown of the factory",
+    "sentenceTrans": "未宣布就關閉工廠"
+  },
+  {
+    "id": 716,
+    "word": "shuttle",
+    "trans": "接駁車",
+    "sentence": "A free 24-hour shuttle service",
+    "sentenceTrans": "24小時免費接駁車服務"
+  },
+  {
+    "id": 717,
+    "word": "Side effect",
+    "trans": "副作用",
+    "sentence": "Prove this drug's side effects as harmful",
+    "sentenceTrans": "證明這項藥品的副作用有害"
+  },
+  {
+    "id": 718,
+    "word": "sightseeing",
+    "trans": "觀光",
+    "sentence": "Schedule two days of sightseeing",
+    "sentenceTrans": "安排兩天時間觀光"
+  },
+  {
+    "id": 719,
+    "word": "sign",
+    "trans": "簽名",
+    "sentence": "Sign the guestbook",
+    "sentenceTrans": "在訪客簿上簽名"
+  },
+  {
+    "id": 720,
+    "word": "signal",
+    "trans": "號誌",
+    "sentence": "Traffic signal",
+    "sentenceTrans": "交通號誌"
+  },
+  {
+    "id": 721,
+    "word": "significant",
+    "trans": "重要的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 722,
+    "word": "similarity",
+    "trans": "相同點",
+    "sentence": "There's no similarity between the two proposals",
+    "sentenceTrans": "兩份企劃之間沒有相同點"
+  },
+  {
+    "id": 723,
+    "word": "simplify",
+    "trans": "簡化",
+    "sentence": "Simplify the operating system",
+    "sentenceTrans": "簡化操作系統"
+  },
+  {
+    "id": 724,
+    "word": "simultaneously",
+    "trans": "同時地",
+    "sentence": "Be released simultaneously",
+    "sentenceTrans": "同時發行"
+  },
+  {
+    "id": 725,
+    "word": "single",
+    "trans": "單一的",
+    "sentence": "Every single day",
+    "sentenceTrans": "每一天...多少人參觀展覽"
+  },
+  {
+    "id": 726,
+    "word": "sink",
+    "trans": "水槽",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 727,
+    "word": "situated",
+    "trans": "位於....的",
+    "sentence": "Our office is conveniently situated",
+    "sentenceTrans": "位置便利"
+  },
+  {
+    "id": 728,
+    "word": "sketch",
+    "trans": "概略描述",
+    "sentence": "Sketch out the plan",
+    "sentenceTrans": "概述了一下計劃"
+  },
+  {
+    "id": 729,
+    "word": "skim",
+    "trans": "瀏覽",
+    "sentence": "Skim the report",
+    "sentenceTrans": "瀏覽報告"
+  },
+  {
+    "id": 730,
+    "word": "skip",
+    "trans": "跳過",
+    "sentence": "Skip to the last item",
+    "sentenceTrans": "跳到最後一項"
+  },
+  {
+    "id": 731,
+    "word": "slacken",
+    "trans": "減弱",
+    "sentence": "The demand has slackened",
+    "sentenceTrans": "市場需求已經減少"
+  },
+  {
+    "id": 732,
+    "word": "slice",
+    "trans": "切片",
+    "sentence": "Slice some salmon",
+    "sentenceTrans": "將鮭魚切片"
+  },
+  {
+    "id": 733,
+    "word": "slide",
+    "trans": "下滑",
+    "sentence": "Product's sliding popularity",
+    "sentenceTrans": "產品的人氣下滑"
+  },
+  {
+    "id": 734,
+    "word": "slightly",
+    "trans": "輕微地",
+    "sentence": "Carpeting is slightly worn",
+    "sentenceTrans": "地毯有些磨損"
+  },
+  {
+    "id": 735,
+    "word": "slip",
+    "trans": "滑落",
+    "sentence": "Earnings per share have slipped 1%",
+    "sentenceTrans": "每股盈餘滑落一個百分點"
+  },
+  {
+    "id": 736,
+    "word": "slope",
+    "trans": "斜坡",
+    "sentence": "Gentle slope",
+    "sentenceTrans": "和緩的斜坡"
+  },
+  {
+    "id": 737,
+    "word": "slot",
+    "trans": "投幣孔",
+    "sentence": "Put a coin in the slot",
+    "sentenceTrans": "把一枚硬幣投進投幣孔"
+  },
+  {
+    "id": 738,
+    "word": "slump",
+    "trans": "暴跌",
+    "sentence": "There will be a slump in our stock prices",
+    "sentenceTrans": "股價會暴跌"
+  },
+  {
+    "id": 739,
+    "word": "smooth",
+    "trans": "光滑",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 740,
+    "word": "smuggle",
+    "trans": "走私",
+    "sentence": "Smuggle cigars into the US",
+    "sentenceTrans": "走私雪茄到美國"
+  }
+],
+        9: [
+  {
+    "id": 741,
+    "word": "soar",
+    "trans": "飆漲",
+    "sentence": "Vegetable prices have soared",
+    "sentenceTrans": "價格飆漲"
+  },
+  {
+    "id": 742,
+    "word": "socialize",
+    "trans": "應酬",
+    "sentence": "Socialize with clients",
+    "sentenceTrans": "與客戶應酬"
+  },
+  {
+    "id": 743,
+    "word": "soften",
+    "trans": "減輕",
+    "sentence": "Soften the impact",
+    "sentenceTrans": "減輕衝擊"
+  },
+  {
+    "id": 744,
+    "word": "sole",
+    "trans": "唯一的",
+    "sentence": "Your sole responsibility is to",
+    "sentenceTrans": "唯一的職責"
+  },
+  {
+    "id": 745,
+    "word": "solicit",
+    "trans": "索取",
+    "sentence": "Solicit compensation",
+    "sentenceTrans": "索取賠償"
+  },
+  {
+    "id": 746,
+    "word": "soothing",
+    "trans": "令人放鬆的",
+    "sentence": "The atmosphere is very soothing",
+    "sentenceTrans": "氣氛很令人放鬆"
+  },
+  {
+    "id": 747,
+    "word": "sophisticated",
+    "trans": "成熟的",
+    "sentence": "Manufacturing in Taiwan is highly sophisticated",
+    "sentenceTrans": "製造相當成熟"
+  },
+  {
+    "id": 748,
+    "word": "sort",
+    "trans": "分類",
+    "sentence": "Sort according to size",
+    "sentenceTrans": "依照大小分類"
+  },
+  {
+    "id": 749,
+    "word": "sound",
+    "trans": "明智的",
+    "sentence": "A sound investment",
+    "sentenceTrans": "明智的投資"
+  },
+  {
+    "id": 750,
+    "word": "source",
+    "trans": "來源",
+    "sentence": "New source of raw materials",
+    "sentenceTrans": "新的原料來源"
+  },
+  {
+    "id": 751,
+    "word": "spare",
+    "trans": "撥出",
+    "sentence": "Spare half an hour for the interview",
+    "sentenceTrans": "撥出半小時時間"
+  },
+  {
+    "id": 752,
+    "word": "specialize",
+    "trans": "專精於",
+    "sentence": "Expert who specialize in fabrics",
+    "sentenceTrans": "專精於布料的專家"
+  },
+  {
+    "id": 753,
+    "word": "specific",
+    "trans": "明確的",
+    "sentence": "Be more specific about giving instructions",
+    "sentenceTrans": "下指令更明確一點"
+  },
+  {
+    "id": 754,
+    "word": "speculate",
+    "trans": "推測",
+    "sentence": "Speculate that...",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 755,
+    "word": "speed",
+    "trans": "加快",
+    "sentence": "Speed up to meet the deadline",
+    "sentenceTrans": "加快速度"
+  },
+  {
+    "id": 756,
+    "word": "split",
+    "trans": "分裂",
+    "sentence": "Deeply split on this issue",
+    "sentenceTrans": "意見嚴重分歧"
+  },
+  {
+    "id": 757,
+    "word": "spoil",
+    "trans": "毀壞",
+    "sentence": "Spoil the future of the company",
+    "sentenceTrans": "毀掉公司的前途"
+  },
+  {
+    "id": 758,
+    "word": "sponsor",
+    "trans": "贊助",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 759,
+    "word": "spontaneously",
+    "trans": "自動地",
+    "sentence": "The audience spontaneously stood up and cheered",
+    "sentenceTrans": "觀眾們自動站起來歡呼"
+  },
+  {
+    "id": 760,
+    "word": "spread",
+    "trans": "散播",
+    "sentence": "Spread rumor",
+    "sentenceTrans": "散播謠言"
+  },
+  {
+    "id": 761,
+    "word": "square",
+    "trans": "廣場",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 762,
+    "word": "squeeze",
+    "trans": "擠壓",
+    "sentence": "There's still room for you to squeeze in",
+    "sentenceTrans": "有位子擠進來"
+  },
+  {
+    "id": 763,
+    "word": "stack",
+    "trans": "堆放",
+    "sentence": "Stack the cartons against the wall",
+    "sentenceTrans": "把紙箱靠著牆堆放"
+  },
+  {
+    "id": 764,
+    "word": "stage",
+    "trans": "階段",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 765,
+    "word": "stagnant",
+    "trans": "停滯不前",
+    "sentence": "Our business has remained stagnant",
+    "sentenceTrans": "業績停滯不前"
+  },
+  {
+    "id": 766,
+    "word": "stain",
+    "trans": "弄髒",
+    "sentence": "Don't stain easily",
+    "sentenceTrans": "不容易弄髒"
+  },
+  {
+    "id": 767,
+    "word": "stake",
+    "trans": "押注",
+    "sentence": "Stake final hopes on this election",
+    "sentenceTrans": "把最後的希望押注在這次的選舉上"
+  },
+  {
+    "id": 768,
+    "word": "stall",
+    "trans": "熄火",
+    "sentence": "car has stalled",
+    "sentenceTrans": "車子熄火了"
+  },
+  {
+    "id": 769,
+    "word": "stamp",
+    "trans": "蓋章",
+    "sentence": "Stamp the quarantee",
+    "sentenceTrans": "在保證書上蓋章"
+  },
+  {
+    "id": 770,
+    "word": "stand",
+    "trans": "攤位",
+    "sentence": "Newspaper stand",
+    "sentenceTrans": "報攤"
+  },
+  {
+    "id": 771,
+    "word": "standard",
+    "trans": "標準的",
+    "sentence": "Standard operating procedures",
+    "sentenceTrans": "標準作業流程"
+  },
+  {
+    "id": 772,
+    "word": "standby",
+    "trans": "備用的",
+    "sentence": "Standby battery",
+    "sentenceTrans": "備用電池"
+  },
+  {
+    "id": 773,
+    "word": "staple",
+    "trans": "主要的",
+    "sentence": "Corn is the staple food",
+    "sentenceTrans": "玉米是主食"
+  },
+  {
+    "id": 774,
+    "word": "stare",
+    "trans": "凝視",
+    "sentence": "Stare out the window",
+    "sentenceTrans": "凝視窗外"
+  },
+  {
+    "id": 775,
+    "word": "starve",
+    "trans": "缺乏",
+    "sentence": "Starve of experienced technicians",
+    "sentenceTrans": "缺乏有經驗的技術人員"
+  },
+  {
+    "id": 776,
+    "word": "state",
+    "trans": "狀態",
+    "sentence": "She is still in a state of anger",
+    "sentenceTrans": "她還在生氣"
+  },
+  {
+    "id": 777,
+    "word": "statement",
+    "trans": "聲明",
+    "sentence": "Issue a statement",
+    "sentenceTrans": "發表聲明"
+  },
+  {
+    "id": 778,
+    "word": "statistics",
+    "trans": "數據",
+    "sentence": "These statistics show that...",
+    "sentenceTrans": "這些數據顯示"
+  },
+  {
+    "id": 779,
+    "word": "staunch",
+    "trans": "忠實的",
+    "sentence": "A staunch supporter of environmental protection",
+    "sentenceTrans": "環保的忠實支持者"
+  },
+  {
+    "id": 780,
+    "word": "steady",
+    "trans": "穩定的",
+    "sentence": "A steady increase in...",
+    "sentenceTrans": "有穩定的成長"
+  },
+  {
+    "id": 781,
+    "word": "sticky",
+    "trans": "有粘性的",
+    "sentence": "Sticky lable",
+    "sentenceTrans": "貼紙"
+  },
+  {
+    "id": 782,
+    "word": "stimulate",
+    "trans": "刺激",
+    "sentence": "Low mortgage rates stimulate the real estate market",
+    "sentenceTrans": "低房貸利率能刺激房地產市場"
+  },
+  {
+    "id": 783,
+    "word": "stipulation",
+    "trans": "規定",
+    "sentence": "Obey the stipulation set for shipping items",
+    "sentenceTrans": "遵守貨運規則"
+  },
+  {
+    "id": 784,
+    "word": "stir",
+    "trans": "攪拌",
+    "sentence": "Stir the soup",
+    "sentenceTrans": "攪拌湯"
+  },
+  {
+    "id": 785,
+    "word": "stock",
+    "trans": "存貨",
+    "sentence": "Don't have any more shirts in stock",
+    "sentenceTrans": "庫存沒有衣服了"
+  },
+  {
+    "id": 786,
+    "word": "store",
+    "trans": "存放",
+    "sentence": "Rent a warehouse to store the machinery",
+    "sentenceTrans": "租一個倉庫來存放機器"
+  },
+  {
+    "id": 787,
+    "word": "stow",
+    "trans": "堆放",
+    "sentence": "Stow the backpack in the compartment",
+    "sentenceTrans": "把背包放在置物櫃"
+  },
+  {
+    "id": 788,
+    "word": "straighten",
+    "trans": "釐清",
+    "sentence": "Straighten out any misunderstanding",
+    "sentenceTrans": "釐清誤會"
+  },
+  {
+    "id": 789,
+    "word": "strategic",
+    "trans": "策略性的",
+    "sentence": "Strategic alliance",
+    "sentenceTrans": "策略聯盟"
+  },
+  {
+    "id": 790,
+    "word": "strengthen",
+    "trans": "強化",
+    "sentence": "Strengthen my resolve to succeed",
+    "sentenceTrans": "強化成功的決心"
+  },
+  {
+    "id": 791,
+    "word": "stress",
+    "trans": "強調",
+    "sentence": "Stress the importance of teamwork",
+    "sentenceTrans": "強調團隊合作的重要性"
+  },
+  {
+    "id": 792,
+    "word": "strict",
+    "trans": "嚴格的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 793,
+    "word": "strike",
+    "trans": "罷工",
+    "sentence": "Go on strike against",
+    "sentenceTrans": "以罷工來反對"
+  },
+  {
+    "id": 794,
+    "word": "string",
+    "trans": "繩子",
+    "sentence": "Tie the documents together with string",
+    "sentenceTrans": "用繩子把文件綁在一起"
+  },
+  {
+    "id": 795,
+    "word": "stroll",
+    "trans": "散步",
+    "sentence": "We stroll along",
+    "sentenceTrans": "沿著散步"
+  },
+  {
+    "id": 796,
+    "word": "stuck",
+    "trans": "卡住",
+    "sentence": "Be stuck in traffic",
+    "sentenceTrans": "困在車陣中"
+  },
+  {
+    "id": 797,
+    "word": "stuff",
+    "trans": "東西",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 798,
+    "word": "style",
+    "trans": "風格",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 799,
+    "word": "subject",
+    "trans": "對象",
+    "sentence": "Has become the subject of criticism",
+    "sentenceTrans": "成為批評的對象"
+  },
+  {
+    "id": 800,
+    "word": "submit",
+    "trans": "繳交",
+    "sentence": "Submit the budget projections",
+    "sentenceTrans": "繳交預算編列書"
+  },
+  {
+    "id": 801,
+    "word": "subscribe",
+    "trans": "訂閱",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 802,
+    "word": "subsidize",
+    "trans": "補助",
+    "sentence": "Be partially subsidized by the government",
+    "sentenceTrans": "部分由政府補助"
+  },
+  {
+    "id": 803,
+    "word": "substantially",
+    "trans": "實質上",
+    "sentence": "Substantially lower rates",
+    "sentenceTrans": "實質上較低的費率"
+  },
+  {
+    "id": 804,
+    "word": "substitute",
+    "trans": "替代品",
+    "sentence": "Use butter as a substitute",
+    "sentenceTrans": "用奶油來當替代品"
+  },
+  {
+    "id": 805,
+    "word": "suburb",
+    "trans": "郊區",
+    "sentence": "Be located in the suburbs",
+    "sentenceTrans": "位於郊區"
+  },
+  {
+    "id": 806,
+    "word": "succeed",
+    "trans": "繼任",
+    "sentence": "The best candidate to succed the CEO",
+    "sentenceTrans": "繼任執行長的最佳人選"
+  },
+  {
+    "id": 807,
+    "word": "sue",
+    "trans": "控告",
+    "sentence": "Be sued for breach of contract",
+    "sentenceTrans": "因違約而被告"
+  },
+  {
+    "id": 808,
+    "word": "suffer",
+    "trans": "遭受",
+    "sentence": "Suffer a heavy punishment",
+    "sentenceTrans": "遭到很重的懲罰"
+  },
+  {
+    "id": 809,
+    "word": "sum",
+    "trans": "總結",
+    "sentence": "This report sums up all the pros and cons",
+    "sentenceTrans": "總結所有正反面論述"
+  },
+  {
+    "id": 810,
+    "word": "summit",
+    "trans": "高峰會",
+    "sentence": "Be invited to attand the APEC Business Summit",
+    "sentenceTrans": "受邀參加企業高峰會"
+  },
+  {
+    "id": 811,
+    "word": "superior",
+    "trans": "高級的",
+    "sentence": "Superior quality flour",
+    "sentenceTrans": "高品質的麵粉"
+  },
+  {
+    "id": 812,
+    "word": "supplementary",
+    "trans": "補充的",
+    "sentence": "Supplementary information",
+    "sentenceTrans": "補充資料"
+  },
+  {
+    "id": 813,
+    "word": "supply",
+    "trans": "供應",
+    "sentence": "Supply the shelters with water",
+    "sentenceTrans": "供應水給避難所"
+  },
+  {
+    "id": 814,
+    "word": "suppose",
+    "trans": "猜想",
+    "sentence": "I suppose ...",
+    "sentenceTrans": "我猜"
+  },
+  {
+    "id": 815,
+    "word": "surgery",
+    "trans": "手術",
+    "sentence": "His knee requires surgery",
+    "sentenceTrans": "膝蓋需要動手術"
+  },
+  {
+    "id": 816,
+    "word": "surround",
+    "trans": "圍繞",
+    "sentence": "Be surrounded by trees",
+    "sentenceTrans": "被樹圍繞著"
+  },
+  {
+    "id": 817,
+    "word": "survey",
+    "trans": "調查",
+    "sentence": "Conduct a survey",
+    "sentenceTrans": "進行調查"
+  },
+  {
+    "id": 818,
+    "word": "survive",
+    "trans": "克服",
+    "sentence": "Survive the sharp competition",
+    "sentenceTrans": "克服激烈的競爭"
+  },
+  {
+    "id": 819,
+    "word": "suspend",
+    "trans": "暫停",
+    "sentence": "Suspend the strike",
+    "sentenceTrans": "暫停罷工"
+  },
+  {
+    "id": 820,
+    "word": "sustain",
+    "trans": "支撐",
+    "sentence": "The store can't be sustained",
+    "sentenceTrans": "店面無法維持下去"
+  },
+  {
+    "id": 821,
+    "word": "sweep",
+    "trans": "掃地",
+    "sentence": "Sweep the floor",
+    "sentenceTrans": "掃地"
+  },
+  {
+    "id": 822,
+    "word": "swift",
+    "trans": "迅速的",
+    "sentence": "Receive a swift reply",
+    "sentenceTrans": "收到立即的回應"
+  },
+  {
+    "id": 823,
+    "word": "swing",
+    "trans": "揮動",
+    "sentence": "Swing the bat",
+    "sentenceTrans": "揮棒"
+  },
+  {
+    "id": 824,
+    "word": "swipe",
+    "trans": "刷",
+    "sentence": "Swipe card before entering the room",
+    "sentenceTrans": "先刷卡才能進房間"
+  },
+  {
+    "id": 825,
+    "word": "switch",
+    "trans": "轉換",
+    "sentence": "Our merchandise will switch from detergents to cosmetics",
+    "sentenceTrans": "商品將從清潔劑轉換成化妝品"
+  },
+  {
+    "id": 826,
+    "word": "symbol",
+    "trans": "標示",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 827,
+    "word": "sympathize",
+    "trans": "贊同",
+    "sentence": "It's hard to sympathize with his decision",
+    "sentenceTrans": "他的決定很難讓人贊同"
+  },
+  {
+    "id": 828,
+    "word": "symptom",
+    "trans": "症狀",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 829,
+    "word": "syndicate",
+    "trans": "集團",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 830,
+    "word": "synthetic",
+    "trans": "合成的",
+    "sentence": "Synthetic leather",
+    "sentenceTrans": "合成皮"
+  }
+],
+        10: [
+  {
+    "id": 831,
+    "word": "table",
+    "trans": "表格",
+    "sentence": "The figures in table 2",
+    "sentenceTrans": "表格二的數字"
+  },
+  {
+    "id": 832,
+    "word": "tactic",
+    "trans": "策略",
+    "sentence": "Selling tactics",
+    "sentenceTrans": "銷售策略"
+  },
+  {
+    "id": 833,
+    "word": "tag",
+    "trans": "標籤",
+    "sentence": "Price tag",
+    "sentenceTrans": "價格標籤"
+  },
+  {
+    "id": 834,
+    "word": "talent",
+    "trans": "天份",
+    "sentence": "Artistic talent",
+    "sentenceTrans": "藝術天份"
+  },
+  {
+    "id": 835,
+    "word": "tally",
+    "trans": "記錄",
+    "sentence": "Tally of visitors",
+    "sentenceTrans": "訪客記錄"
+  },
+  {
+    "id": 836,
+    "word": "target",
+    "trans": "目標",
+    "sentence": "Sales target",
+    "sentenceTrans": "銷售目標"
+  },
+  {
+    "id": 837,
+    "word": "task",
+    "trans": "任務",
+    "sentence": "Prime task",
+    "sentenceTrans": "首要任務"
+  },
+  {
+    "id": 838,
+    "word": "tear",
+    "trans": "撕破",
+    "sentence": "Tear down the museum",
+    "sentenceTrans": "拆除"
+  },
+  {
+    "id": 840,
+    "word": "technical",
+    "trans": "技術的",
+    "sentence": "Encounter some technical problems",
+    "sentenceTrans": "遭遇一些技術問題"
+  },
+  {
+    "id": 841,
+    "word": "teller",
+    "trans": "出納人員",
+    "sentence": "The tellers at that bank",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 842,
+    "word": "temperature",
+    "trans": "溫度",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 843,
+    "word": "temporary",
+    "trans": "臨時的",
+    "sentence": "Temporary tents",
+    "sentenceTrans": "臨時帳篷"
+  },
+  {
+    "id": 844,
+    "word": "tendency",
+    "trans": "趨勢",
+    "sentence": "Stock prices have a tendency to fluctuate",
+    "sentenceTrans": "股價有波動的趨勢"
+  },
+  {
+    "id": 845,
+    "word": "tension",
+    "trans": "緊張",
+    "sentence": "The tension between the two departments remains",
+    "sentenceTrans": "兩個部門間的緊張持續著"
+  },
+  {
+    "id": 846,
+    "word": "terminal",
+    "trans": "航廈",
+    "sentence": "Domestic terminal",
+    "sentenceTrans": "國內航廈"
+  },
+  {
+    "id": 847,
+    "word": "territory",
+    "trans": "領域",
+    "sentence": "Unfamiliar territory",
+    "sentenceTrans": "不熟悉的領域"
+  },
+  {
+    "id": 848,
+    "word": "text",
+    "trans": "文字",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 849,
+    "word": "textile",
+    "trans": "紡織品",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 850,
+    "word": "theory",
+    "trans": "理論",
+    "sentence": "Theory and practice",
+    "sentenceTrans": "理論和實際"
+  },
+  {
+    "id": 851,
+    "word": "therapy",
+    "trans": "治療",
+    "sentence": "Music therapy",
+    "sentenceTrans": "音樂治療"
+  },
+  {
+    "id": 852,
+    "word": "thorough",
+    "trans": "詳盡的",
+    "sentence": "Conduct a thorough investigation",
+    "sentenceTrans": "詳盡的調查"
+  },
+  {
+    "id": 853,
+    "word": "tie",
+    "trans": "繫緊",
+    "sentence": "Tie the labels to check-in luggage",
+    "sentenceTrans": "將標籤繫在托運行李上"
+  },
+  {
+    "id": 854,
+    "word": "title",
+    "trans": "職稱",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 855,
+    "word": "token",
+    "trans": "代幣",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 856,
+    "word": "tolerate",
+    "trans": "忍受",
+    "sentence": "Can no longer tolerate his imcompetence",
+    "sentenceTrans": "再也受不了他的無能"
+  },
+  {
+    "id": 857,
+    "word": "tour",
+    "trans": "遊覽",
+    "sentence": "Free guided tour",
+    "sentenceTrans": "免費導覽"
+  },
+  {
+    "id": 858,
+    "word": "trace",
+    "trans": "找出",
+    "sentence": "Trace the source of a rumor",
+    "sentenceTrans": "找出謠言的來源"
+  },
+  {
+    "id": 859,
+    "word": "trade",
+    "trans": "貿易",
+    "sentence": "Holding a trade show",
+    "sentenceTrans": "舉辦貿易展"
+  },
+  {
+    "id": 860,
+    "word": "traditional",
+    "trans": "傳統的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 861,
+    "word": "transaction",
+    "trans": "交易",
+    "sentence": "Cancel the transaction",
+    "sentenceTrans": "取消交易"
+  },
+  {
+    "id": 862,
+    "word": "transition",
+    "trans": "過渡時期",
+    "sentence": "Leadership transition",
+    "sentenceTrans": "領導權轉移"
+  },
+  {
+    "id": 863,
+    "word": "translate",
+    "trans": "翻譯",
+    "sentence": "Translate from English to Japanese",
+    "sentenceTrans": "從英文翻譯成日文"
+  },
+  {
+    "id": 864,
+    "word": "transport",
+    "trans": "運送",
+    "sentence": "Transport the goods to the harbor",
+    "sentenceTrans": "運送到港口"
+  },
+  {
+    "id": 865,
+    "word": "tray",
+    "trans": "托盤",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 866,
+    "word": "trial",
+    "trans": "試用",
+    "sentence": "Free trial period",
+    "sentenceTrans": "免費鑑賞期"
+  },
+  {
+    "id": 867,
+    "word": "tribute",
+    "trans": "致敬",
+    "sentence": "Pay tribute to him at memorial service",
+    "sentenceTrans": "在告別式上向他致敬"
+  },
+  {
+    "id": 868,
+    "word": "trim",
+    "trans": "修剪",
+    "sentence": "Trim the hedges",
+    "sentenceTrans": "修剪樹叢"
+  },
+  {
+    "id": 869,
+    "word": "trivial",
+    "trans": "瑣碎的",
+    "sentence": "Trivial matters",
+    "sentenceTrans": "小事"
+  },
+  {
+    "id": 870,
+    "word": "tropical",
+    "trans": "熱帶的",
+    "sentence": "Tropical island",
+    "sentenceTrans": "熱帶小島"
+  },
+  {
+    "id": 871,
+    "word": "trust",
+    "trans": "信託",
+    "sentence": "Charitable trust",
+    "sentenceTrans": "慈善信託基金"
+  },
+  {
+    "id": 872,
+    "word": "turn",
+    "trans": "轉換",
+    "sentence": "Take turns using the copier",
+    "sentenceTrans": "輪流使用影印機"
+  },
+  {
+    "id": 873,
+    "word": "turnaround",
+    "trans": "突然好轉",
+    "sentence": "Wise investments have brought him to a sudden financial turnaround",
+    "sentenceTrans": "正確投資讓他的經濟突然好轉"
+  },
+  {
+    "id": 874,
+    "word": "turnout",
+    "trans": "出席人數",
+    "sentence": "A large turnout",
+    "sentenceTrans": "出席人數很多"
+  },
+  {
+    "id": 875,
+    "word": "turnover",
+    "trans": "營業額",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 876,
+    "word": "tutor",
+    "trans": "家教",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 877,
+    "word": "typical",
+    "trans": "典型的",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 878,
+    "word": "ultimate",
+    "trans": "最終的",
+    "sentence": "Ultimate goal",
+    "sentenceTrans": "最終目標"
+  },
+  {
+    "id": 879,
+    "word": "unanimous",
+    "trans": "一致的",
+    "sentence": "The committee was unanimous in their decision to...",
+    "sentenceTrans": "委員會一致決定..."
+  },
+  {
+    "id": 880,
+    "word": "underestimate",
+    "trans": "低估",
+    "sentence": "Underestimate the importance of teamwork",
+    "sentenceTrans": "低估團隊合作的重要性"
+  },
+  {
+    "id": 881,
+    "word": "undergo",
+    "trans": "經歷",
+    "sentence": "Undergo many changes",
+    "sentenceTrans": "經歷許多變化"
+  },
+  {
+    "id": 882,
+    "word": "underline",
+    "trans": "強調",
+    "sentence": "Underline the importance of teamwork",
+    "sentenceTrans": "強調團隊合作的重要性"
+  },
+  {
+    "id": 883,
+    "word": "undertake",
+    "trans": "承擔",
+    "sentence": "Undertake the job of settling labor disputes",
+    "sentenceTrans": "負責解決勞資糾紛的工作"
+  },
+  {
+    "id": 884,
+    "word": "uniform",
+    "trans": "不變的",
+    "sentence": "Maintain a uniform temperature in the greenhouse",
+    "sentenceTrans": "溫室保持恆溫"
+  },
+  {
+    "id": 885,
+    "word": "unique",
+    "trans": "獨一無二的",
+    "sentence": "Unique style",
+    "sentenceTrans": "獨特的風格"
+  },
+  {
+    "id": 886,
+    "word": "unity",
+    "trans": "團結",
+    "sentence": "Departmental unity",
+    "sentenceTrans": "部門間的團結"
+  },
+  {
+    "id": 887,
+    "word": "unload",
+    "trans": "卸下",
+    "sentence": "Unload the luggage",
+    "sentenceTrans": "卸下行李"
+  },
+  {
+    "id": 888,
+    "word": "update",
+    "trans": "更新",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 889,
+    "word": "urge",
+    "trans": "催促",
+    "sentence": "Urge its members to take action",
+    "sentenceTrans": "催促採取行動"
+  },
+  {
+    "id": 890,
+    "word": "utilities",
+    "trans": "水電",
+    "sentence": "Pay for utilities",
+    "sentenceTrans": "付水電費"
+  },
+  {
+    "id": 891,
+    "word": "utterly",
+    "trans": "完全地",
+    "sentence": "Utterly different",
+    "sentenceTrans": "完全不同"
+  },
+  {
+    "id": 892,
+    "word": "vacancy",
+    "trans": "空位",
+    "sentence": "This hotel seldom has vacancies",
+    "sentenceTrans": "很少有空房"
+  },
+  {
+    "id": 893,
+    "word": "vaccinate",
+    "trans": "預防注射",
+    "sentence": "We have to be vaccinated against some diseases",
+    "sentenceTrans": "打疫苗來預防某些疾病"
+  },
+  {
+    "id": 894,
+    "word": "vague",
+    "trans": "模糊的",
+    "sentence": "Vague of a description",
+    "sentenceTrans": "模糊的描述"
+  },
+  {
+    "id": 895,
+    "word": "valid",
+    "trans": "有效的",
+    "sentence": "Passport is valid for another five years",
+    "sentenceTrans": "有效期還有五年"
+  },
+  {
+    "id": 896,
+    "word": "valuable",
+    "trans": "貴重物品",
+    "sentence": "Deposite valuables in the bank safe",
+    "sentenceTrans": "把貴重物品存放在銀行保險箱"
+  },
+  {
+    "id": 897,
+    "word": "variable",
+    "trans": "易變的",
+    "sentence": "The price is variable",
+    "sentenceTrans": "價格不定"
+  },
+  {
+    "id": 898,
+    "word": "vehicle",
+    "trans": "交通工具",
+    "sentence": "Fuel-efficient vehicles",
+    "sentenceTrans": "省油的交通工具"
+  },
+  {
+    "id": 899,
+    "word": "ventilation",
+    "trans": "通風",
+    "sentence": "The ventilation in the greenhouse",
+    "sentenceTrans": "溫室裡的通風"
+  },
+  {
+    "id": 900,
+    "word": "venture",
+    "trans": "冒險",
+    "sentence": "Venture the most capital on...",
+    "sentenceTrans": "把大部分的資金押注在"
+  },
+  {
+    "id": 901,
+    "word": "verge",
+    "trans": "邊緣",
+    "sentence": "Research is on the verge of a major breakthrough",
+    "sentenceTrans": "研究已經接近重大突破"
+  },
+  {
+    "id": 902,
+    "word": "verify",
+    "trans": "核對",
+    "sentence": "Verify your identity",
+    "sentenceTrans": "核對你的身份"
+  },
+  {
+    "id": 903,
+    "word": "version",
+    "trans": "版本",
+    "sentence": "The later version was the one we finally adopted",
+    "sentenceTrans": "最終採用的是後來的版本"
+  },
+  {
+    "id": 904,
+    "word": "vessel",
+    "trans": "船隻",
+    "sentence": "Fishing vessels",
+    "sentenceTrans": "漁船"
+  },
+  {
+    "id": 905,
+    "word": "vestige",
+    "trans": "遺跡",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 906,
+    "word": "veteran",
+    "trans": "老手",
+    "sentence": "A veteran salesman",
+    "sentenceTrans": "業務老手"
+  },
+  {
+    "id": 907,
+    "word": "victim",
+    "trans": "受害者",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 908,
+    "word": "virtually",
+    "trans": "事實上",
+    "sentence": "Virtually...",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 909,
+    "word": "vision",
+    "trans": "願景",
+    "sentence": "Our shared vision",
+    "sentenceTrans": "共同的願景"
+  },
+  {
+    "id": 910,
+    "word": "volatile",
+    "trans": "不穩定的",
+    "sentence": "Volatile markets",
+    "sentenceTrans": "不穩定的市場"
+  },
+  {
+    "id": 911,
+    "word": "volume",
+    "trans": "份量",
+    "sentence": "Volume of trade",
+    "sentenceTrans": "貿易量"
+  },
+  {
+    "id": 912,
+    "word": "volunteer",
+    "trans": "自願",
+    "sentence": "I volunteer to take her to the mall",
+    "sentenceTrans": "自願開車送她"
+  },
+  {
+    "id": 913,
+    "word": "vote",
+    "trans": "投票",
+    "sentence": "Vote unanimously against",
+    "sentenceTrans": "一致投票反對"
+  },
+  {
+    "id": 914,
+    "word": "voucher",
+    "trans": "憑證",
+    "sentence": "Parking vouchers",
+    "sentenceTrans": "停車券"
+  },
+  {
+    "id": 915,
+    "word": "voyage",
+    "trans": "航行",
+    "sentence": "First voyage",
+    "sentenceTrans": "首航"
+  },
+  {
+    "id": 916,
+    "word": "wage",
+    "trans": "工資",
+    "sentence": "Demand a raise in wages of 20%",
+    "sentenceTrans": "要求工資調升"
+  },
+  {
+    "id": 917,
+    "word": "wander",
+    "trans": "漫步",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 918,
+    "word": "wardrobe",
+    "trans": "衣服",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 919,
+    "word": "warn",
+    "trans": "警告",
+    "sentence": "He warn us against…",
+    "sentenceTrans": "警告"
+  },
+  {
+    "id": 920,
+    "word": "warranty",
+    "trans": "保證書",
+    "sentence": "Products come with a two-year warranty",
+    "sentenceTrans": "產品附有兩年的保證書"
+  },
+  {
+    "id": 921,
+    "word": "waste",
+    "trans": "浪費",
+    "sentence": "Waste your time",
+    "sentenceTrans": "浪費時間"
+  },
+  {
+    "id": 922,
+    "word": "wealth",
+    "trans": "財富",
+    "sentence": "Accumulate great wealth",
+    "sentenceTrans": "累積龐大的財富"
+  },
+  {
+    "id": 923,
+    "word": "weave",
+    "trans": "編織",
+    "sentence": "She wove me a pair of mittens",
+    "sentenceTrans": "她織給我一雙手套"
+  },
+  {
+    "id": 924,
+    "word": "weed",
+    "trans": "除草",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 925,
+    "word": "weigh",
+    "trans": "重量",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 926,
+    "word": "welfare",
+    "trans": "福利",
+    "sentence": "Benefits and walfare",
+    "sentenceTrans": "福利"
+  },
+  {
+    "id": 927,
+    "word": "will",
+    "trans": "意願",
+    "sentence": "Sign the papers by his own free will",
+    "sentenceTrans": "自願簽署那些文件"
+  },
+  {
+    "id": 928,
+    "word": "wipe",
+    "trans": "擦拭",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 929,
+    "word": "withdraw",
+    "trans": "提款",
+    "sentence": "Withdraw from the ATM",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 930,
+    "word": "witness",
+    "trans": "證人",
+    "sentence": "Key witness",
+    "sentenceTrans": "關鍵證人"
+  },
+  {
+    "id": 931,
+    "word": "workforce",
+    "trans": "員工",
+    "sentence": "Workforce of 2000 people",
+    "sentenceTrans": "兩千名員工"
+  },
+  {
+    "id": 932,
+    "word": "workshop",
+    "trans": "研習會",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 933,
+    "word": "worth",
+    "trans": "值得",
+    "sentence": "",
+    "sentenceTrans": ""
+  },
+  {
+    "id": 934,
+    "word": "wrap",
+    "trans": "包起來",
+    "sentence": "Wrap it up in paper",
+    "sentenceTrans": "用紙包起來"
+  },
+  {
+    "id": 935,
+    "word": "yield",
+    "trans": "生產",
+    "sentence": "This land yield crops worth",
+    "sentenceTrans": "這塊土地生產的農作物"
+  },
+  {
+    "id": 936,
+    "word": "youth",
+    "trans": "年輕",
+    "sentence": "In my youth",
+    "sentenceTrans": "我年輕時"
+  },
+  {
+    "id": 937,
+    "word": "zealous",
+    "trans": "熱衷的",
+    "sentence": "A zealous environmentalist",
+    "sentenceTrans": "熱衷的環保人士"
+  },
+  {
+    "id": 938,
+    "word": "zip",
+    "trans": "拉上",
+    "sentence": "Zip it shut",
+    "sentenceTrans": "將袋子封緊"
+  }
+] 
+    };
+
+    let currentTab = 1;
+    let currentRate = 0.8;
+    let isWordHidden = false;
+    let isTransHidden = false;
+    let quizQueue = [];
+    let currentQuizIndex = 0;
+    let quizMode = '';
+
+    window.onload = function() {
+        initTabs();
+    };
+
+    function initTabs() {
+        const tabMenu = document.getElementById('tabMenu');
+        for (let i = 1; i <= 10; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = `List ${i}`;
+            btn.className = 'tab-button';
+            btn.id = `tabBtn-${i}`;
+            btn.onclick = () => switchTab(i);
+            tabMenu.appendChild(btn);
+        }
+        switchTab(1);
+    }
+
+    function switchTab(tabNum) {
+        currentTab = tabNum;
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tabBtn-${tabNum}`).classList.add('active');
+        renderList();
+    }
+
+    function renderList() {
+        const masteredIds = JSON.parse(localStorage.getItem(`mastered_L${currentTab}`) || "[]");
+        const learnList = document.getElementById('learningList');
+        const masteredList = document.getElementById('masteredList');
+        learnList.innerHTML = '';
+        masteredList.innerHTML = '';
+
+        let lCount = 0, mCount = 0;
+        (allVocabData[currentTab] || []).forEach(item => {
+            const isMastered = masteredIds.includes(item.id);
+            const card = document.createElement('div');
+            card.className = `card ${isMastered ? 'mastered-card' : ''}`;
+            card.innerHTML = `
+                <div class="check-area"><input type="checkbox" ${isMastered ? 'checked' : ''} onclick="toggleStatus(${item.id})"></div>
+                <div class="word-area">
+                    <div class="word-text ${isWordHidden ? 'hide-content' : ''}" onclick="speak('${item.word}')">${item.word}</div>
+                    <div class="translation ${isTransHidden ? 'hide-content' : ''}">${item.trans}</div>
+                </div>
+                <div class="sentence-area">
+                    <div class="sentence-en" onclick="speak('${item.sentence.replace(/'/g, "\\'")}')">${item.sentence}</div>
+                    <div class="sentence-zh ${isTransHidden ? 'hide-content' : ''}">${item.sentenceTrans}</div>
+                </div>
+            `;
+            if (isMastered) { masteredList.appendChild(card); mCount++; }
+            else { learnList.appendChild(card); lCount++; }
+        });
+        document.getElementById('learnCount').innerText = lCount;
+        document.getElementById('masteredCount').innerText = mCount;
+        document.getElementById('currentTitle').innerHTML = `學習清單 - List ${currentTab} (<span id="learnCount">${lCount}</span>)`;
+    }
+
+    function toggleStatus(id) {
+        let masteredIds = JSON.parse(localStorage.getItem(`mastered_L${currentTab}`) || "[]");
+        if (masteredIds.includes(id)) masteredIds = masteredIds.filter(mid => mid !== id);
+        else masteredIds.push(id);
+        localStorage.setItem(`mastered_L${currentTab}`, JSON.stringify(masteredIds));
+        renderList();
+    }
+
+    function toggleVisibility(type) {
+        if (type === 'word') isWordHidden = !isWordHidden;
+        else isTransHidden = !isTransHidden;
+        renderList();
+    }
+
+    function updateRate(val) {
+        currentRate = val;
+        document.getElementById('rateValue').innerText = val;
+    }
+
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'en-US';
+        msg.rate = currentRate;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function resetProgress() {
+        if (confirm(`確定要重置 List ${currentTab} 的學習進度嗎？`)) {
+            localStorage.removeItem(`mastered_L${currentTab}`);
+            renderList();
+        }
+    }
+
+    // 測驗邏輯
+    function startQuiz(mode) {
+        const data = allVocabData[currentTab] || [];
+        if (data.length === 0) return;
+        quizMode = mode;
+        quizQueue = [...data].sort(() => Math.random() - 0.5);
+        currentQuizIndex = 0;
+        document.getElementById('quizOverlay').style.display = 'block';
+        nextQuizStep();
+    }
+
+    function nextQuizStep() {
+        if (currentQuizIndex >= quizQueue.length) {
+            alert('測驗完成！');
+            return endQuiz();
+        }
+        const item = quizQueue[currentQuizIndex];
+        const display = document.getElementById('quizDisplay');
+        document.getElementById('quizProgress').innerText = `進度: ${currentQuizIndex + 1} / ${quizQueue.length}`;
+        document.getElementById('quizActions').style.display = 'none';
+        document.getElementById('quizAnswerBtn').style.display = 'block';
+
+        let contentHtml = '';
+        if (quizMode === 'word') contentHtml = `<div class="quiz-trans">${item.trans}</div><div class="quiz-word" style="visibility:hidden">${item.word}</div>`;
+        else if (quizMode === 'trans') contentHtml = `<div class="quiz-word">${item.word}</div><div class="quiz-trans" style="visibility:hidden">${item.trans}</div>`;
+        else if (quizMode === 'audio') {
+            contentHtml = `<div class="quiz-word" style="cursor:pointer" onclick="speak('${item.word}')">🔊 點擊播放</div><div class="quiz-trans" style="visibility:hidden">${item.word} <br> ${item.trans}</div>`;
+            setTimeout(() => speak(item.word), 300);
+        }
+        display.innerHTML = contentHtml;
+    }
+
+    function showQuizAnswer() {
+        const item = quizQueue[currentQuizIndex];
+        const display = document.getElementById('quizDisplay');
+        display.querySelectorAll('[style*="visibility:hidden"]').forEach(el => el.style.visibility = 'visible');
+        display.innerHTML += `<div class="quiz-sentence"><b>Example:</b><br>${item.sentence}<br><span style="color:#888">${item.sentenceTrans}</span></div>`;
+        document.getElementById('quizAnswerBtn').style.display = 'none';
+        document.getElementById('quizActions').style.display = 'flex';
+        if (quizMode !== 'audio') speak(item.word);
+    }
+
+    function submitQuiz(isCorrect) {
+        updateStat(quizQueue[currentQuizIndex].word, isCorrect);
+        currentQuizIndex++;
+        nextQuizStep();
+    }
+
+    function updateStat(word, isCorrect) {
+        let stats = JSON.parse(localStorage.getItem(`stats_L${currentTab}`) || "{}");
+        if (!stats[word]) stats[word] = { c: 0, w: 0 };
+        if (isCorrect) stats[word].c++; else stats[word].w++;
+        localStorage.setItem(`stats_L${currentTab}`, JSON.stringify(stats));
+    }
+
+    function endQuiz() {
+        document.getElementById('quizOverlay').style.display = 'none';
+        renderList();
+    }
+
+    // ==========================================
+    // 修改後的 查看統計 功能 - 新增排序邏輯
+    // ==========================================
+    function showStats() {
+        document.getElementById('statsListNum').innerText = currentTab;
+        const body = document.getElementById('statsBody');
+        const stats = JSON.parse(localStorage.getItem(`stats_L${currentTab}`) || "{}");
+        body.innerHTML = '';
+
+        // 複製一份單字資料進行排序
+        const sortedWords = [...(allVocabData[currentTab] || [])];
+
+        // 依照錯誤次數 (w) 進行降序排序 (由大到小)
+        sortedWords.sort((a, b) => {
+            const statA = stats[a.word] || { c: 0, w: 0 };
+            const statB = stats[b.word] || { c: 0, w: 0 };
+            return statB.w - statA.w; // 錯誤多的在前
+        });
+
+        sortedWords.forEach(item => {
+            const s = stats[item.word] || { c: 0, w: 0 };
+            const total = s.c + s.w;
+            const rate = total === 0 ? '0%' : Math.round((s.c / total) * 100) + '%';
+            const row = `<tr><td>${item.word}</td><td>${s.c}</td><td>${s.w}</td><td>${rate}</td></tr>`;
+            body.innerHTML += row;
+        });
+
+        document.getElementById('statsOverlay').style.display = 'block';
+    }
+
+    function resetStats() {
+        if (confirm('確定要清除目前的統計數據嗎？')) {
+            localStorage.removeItem(`stats_L${currentTab}`);
+            showStats();
+        }
+    }
+</script>
+
+</body>
+</html>
